@@ -1,6 +1,508 @@
-/* ... (기존 style.css 내용) ... */
+/* * LUCE Lookbook Platform을 위한 기본 스타일시트 (style.css)
+ * index.html의 전체 구조와 Pretendard 폰트에 맞게 작성되었습니다.
+ */
 
-/* 10. 헤더 추가 요소 (언어 선택기) */
+:root {
+  --primary-color: #1a1a1a;
+  --primary-hover: #333333;
+  --text-color: #222;
+  --text-light: #555;
+  --text-lighter: #888;
+  --border-color: #eaeaea;
+  --background-color: #ffffff;
+  --background-light: #f9f9f9;
+  --font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --shadow-sm: 0 2px 4px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 8px rgba(0,0,0,0.03), 0 2px 6px rgba(0,0,0,0.05);
+}
+
+/* 1. 기본 및 레이아웃 */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-family);
+  color: var(--text-color);
+  background-color: var(--background-color);
+  margin: 0;
+  line-height: 1.6;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* 2. 헤더 */
+.site-header {
+  border-bottom: 1px solid var(--border-color);
+  padding: 16px 0;
+  background-color: var(--background-color);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.header-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.logo {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: var(--primary-color);
+}
+.logo img { 
+  height: 24px; 
+  margin-right: 8px;
+  /* SVG 로고의 색상을 텍스트 색상과 맞춤 */
+  filter: invert(10%) sepia(1%) saturate(0) hue-rotate(145deg) brightness(95%) contrast(100%);
+}
+.logo__text { font-size: 18px; font-weight: 700; letter-spacing: -0.2px; }
+
+.main-nav { display: flex; gap: 24px; }
+.main-nav a { 
+  text-decoration: none; 
+  color: var(--text-light); 
+  font-weight: 500;
+  padding: 4px 0;
+  border-bottom: 2px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+}
+.main-nav a:hover { color: var(--primary-color); }
+.main-nav a.active {
+  color: var(--primary-color);
+  font-weight: 600;
+  border-bottom-color: var(--primary-color);
+}
+
+/* 3. 버튼 */
+.btn {
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  font-weight: 600;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: var(--font-family);
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+.btn.ghost {
+  border-color: var(--border-color);
+  color: var(--text-color);
+  background-color: transparent;
+}
+.btn.ghost:hover { background-color: var(--background-light); }
+.btn.primary {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+.btn.primary:hover { background-color: var(--primary-hover); }
+/* 셀렉션 버튼 (tertiary) */
+.btn.tertiary {
+  background-color: var(--background-light);
+  border-color: var(--border-color);
+  color: var(--text-color);
+}
+.btn.tertiary:hover {
+  background-color: #f0f0f0;
+}
+
+/* 4. 룩북 섹션 */
+[data-view-section] { padding: 48px 0; }
+/* app.js에서 aria-hidden=true로 설정된 섹션 숨기기 */
+[data-view-section][aria-hidden="true"] {
+  display: none;
+}
+
+.lookbook-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.lookbook-title h1 { font-size: 32px; margin: 0; line-height: 1.2; }
+.tag { font-size: 12px; font-weight: 700; color: var(--text-light); margin-bottom: 4px; }
+
+/* 5. 필터 버튼 */
+.filter-group { display: flex; gap: 8px; flex-wrap: wrap; }
+.filter-btn {
+  padding: 8px 16px;
+  font-size: 15px;
+  font-family: var(--font-family);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  background-color: var(--background-color);
+  color: var(--text-light);
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+.filter-btn:hover { background-color: var(--background-light); }
+.filter-btn.active {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+  font-weight: 500;
+}
+
+/* 6. 지표 카드 */
+.lookbook-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 40px;
+}
+.metric-card {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+}
+.metric-card--primary {
+  background-color: var(--primary-color);
+  color: white;
+}
+.metric-label { margin: 0; font-size: 14px; font-weight: 500; opacity: 0.9;}
+.metric-value { font-size: 36px; font-weight: 700; margin: 4px 0; line-height: 1; }
+.metric-caption { margin: 0; font-size: 13px; opacity: 0.8; }
+.metric-card--primary .metric-caption { opacity: 0.7; }
+.metric-error[hidden] { display: none; }
+.metric-error {
+  grid-column: 1 / -1; /* 전체 너비 차지 */
+  color: #d9534f;
+  background-color: #fcf2f2;
+  border: 1px solid #f0c0c0;
+  padding: 16px;
+  border-radius: var(--radius-md);
+}
+
+/* 7. 룩북 그리드 (app.js에서 생성) */
+.lookbook-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 24px;
+}
+.look-card {
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: box-shadow 0.2s, transform 0.2s;
+  background-color: var(--background-light);
+  cursor: pointer;
+}
+.look-card:hover { 
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md); 
+}
+.look-card__image-wrapper {
+  aspect-ratio: 3 / 4;
+  background-color: #f0f0f0;
+}
+.look-card__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.look-card__image.error {
+  /* 이미지 로딩 실패 시 */
+  object-fit: contain;
+  padding: 10%;
+  opacity: 0.5;
+}
+.look-card__body { padding: 12px 16px; }
+.look-card__title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.look-card__supplier {
+  font-size: 14px;
+  color: var(--text-light);
+  margin: 0;
+}
+.lookbook-loader {
+  text-align: center;
+  padding: 32px;
+  font-size: 16px;
+  color: var(--text-light);
+}
+
+/* 8. 섹션 공통 */
+.section-header { 
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px; 
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.section-header h2 { font-size: 28px; margin: 0; }
+.section-subtitle { font-size: 16px; color: var(--text-light); margin: 4px 0 0 0; max-width: 650px; }
+
+/* 9. 푸터 */
+.site-footer {
+  border-top: 1px solid var(--border-color);
+  background-color: var(--background-light);
+  padding: 40px 0;
+  margin-top: 64px;
+}
+.footer-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  color: var(--text-lighter);
+  flex-wrap: wrap;
+  gap: 20px;
+}
+.footer-inner .logo { filter: grayscale(100%); opacity: 0.8; }
+.footer-inner p { margin: 0 0 4px 0; font-size: 14px; }
+.footer-meta { text-align: right; font-size: 14px; }
+
+/* 10. 룩북 모달 (Look Modal) */
+.look-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* JS가 aria-hidden="true" 제거 시 표시 */
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s, visibility 0.3s;
+}
+.look-modal[aria-hidden="false"] {
+  opacity: 1;
+  visibility: visible;
+}
+.look-modal__backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+}
+.look-modal__dialog {
+  position: relative;
+  z-index: 210;
+  background-color: var(--background-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  width: 90%;
+  max-width: 900px;
+  max-height: 90vh;
+  display: flex;
+  overflow: hidden;
+}
+.look-modal__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: var(--background-light);
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  font-size: 24px;
+  font-weight: 300;
+  line-height: 1;
+  color: var(--text-light);
+  cursor: pointer;
+  z-index: 220;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.look-modal__close:hover { background-color: #f0f0f0; }
+.look-modal__media {
+  flex-basis: 60%;
+  background-color: #f0f0f0;
+  overflow-y: auto;
+}
+/* JS로 채워질 미디어 (이미지/비디오) */
+.look-modal__media img,
+.look-modal__media iframe {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+.look-modal__body {
+  flex-basis: 40%;
+  padding: 32px;
+  overflow-y: auto;
+}
+/* JS로 채워질 모달 내부 컨텐츠 스타일 (예시) */
+.look-modal__body h2 { font-size: 24px; margin-top: 0; }
+.look-modal__body .tag { margin-top: 16px; }
+.look-modal__body p { color: var(--text-light); }
+.look-modal__body .btn { 
+  width: 100%; 
+  text-align: center; 
+  padding: 12px; 
+  margin-top: 16px;
+}
+
+/* 11. 셀렉션 (Selection) */
+.selection-content {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 32px;
+  align-items: flex-start;
+}
+.selection-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+/* JS로 채워질 리스트 아이템 스타일 (예시) */
+.selection-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+.selection-item:last-child { border-bottom: none; }
+.selection-item__img { width: 60px; height: 80px; object-fit: cover; border-radius: var(--radius-sm); background: #f0f0f0; }
+.selection-item__info { flex-grow: 1; }
+.selection-item__title { font-weight: 600; margin: 0; }
+.selection-item__supplier { font-size: 14px; color: var(--text-light); margin: 0; }
+.selection-item__remove { 
+  font-size: 14px; 
+  color: #d9534f; 
+  cursor: pointer; 
+  background: none;
+  border: none;
+  padding: 4px;
+}
+.selection-item__remove:hover { text-decoration: underline; }
+
+.selection-summary {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  background-color: var(--background-light);
+  position: sticky; /* 스크롤 시 상단에 고정 */
+  top: 100px; /* 헤더 높이만큼 여유 */
+}
+.selection-summary h3 { margin-top: 0; }
+.selection-summary p { font-size: 15px; color: var(--text-light); }
+.selection-summary ul { padding-left: 20px; font-size: 15px; }
+
+/* 12. 스튜디오 폼 (Studio Form) */
+.studio-form {
+  max-width: 650px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 32px;
+  background-color: var(--background-light);
+  box-shadow: var(--shadow-sm);
+}
+.form-group {
+  margin-bottom: 20px;
+}
+.form-group label {
+  display: block;
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+.form-group input[type="text"],
+.form-group input[type="date"],
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  font-family: var(--font-family);
+  background-color: var(--background-color); /* 배경색 강제 */
+}
+.form-group textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+.form-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.form-row .form-group {
+  flex: 1;
+  min-width: 200px; /* 좁은 화면에서 줄바꿈 */
+}
+.form-feedback {
+  margin-top: 16px;
+  font-size: 14px;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  display: none; /* JS로 표시 */
+}
+.form-feedback.success { 
+  color: #155724; 
+  background-color: #d4edda;
+  border: 1px solid #c3e6cb;
+  display: block;
+}
+.form-feedback.error { 
+  color: #721c24; 
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  display: block;
+}
+
+/* 13. 체크리스트 (Checklist) */
+.checklist-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+}
+.checklist-card {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  background-color: var(--background-light);
+}
+.checklist-card h3 {
+  margin-top: 0;
+  font-size: 18px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+.checklist-card ul {
+  padding-left: 20px;
+  margin: 0;
+  color: var(--text-light);
+  font-size: 15px;
+}
+.checklist-card li {
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+
+/* 14. 헤더 추가 요소 (언어 선택기) */
 .header-actions {
   display: flex;
   align-items: center;
