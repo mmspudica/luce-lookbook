@@ -1,15 +1,21 @@
 /* * LUCE Lookbook Platform 메인 스크립트 (app.js)
- * demo-data.js 의 데이터를 가져와 룩북 그리드와 필터 기능을 구현합니다.
- */
-document.addEventListener('DOMContentLoaded', () => {
-  // 전역에서 사용할 DOM 요소 캐싱
+ * 1. 룩북 그리드와 필터 기능 구현 (demo-data.js)
+ * 2. 다국어(i18n) 기능 구현 (locales/*.json)
+ */
+
+// DOMContentLoaded 이벤트 리스너를 async로 설정하여 await setLanguage 사용
+document.addEventListener('DOMContentLoaded', async () => {
+  // --- 1. 전역 DOM 요소 캐싱 ---
   const grid = document.getElementById('lookbook-grid');
   const metricProducts = document.getElementById('metric-products');
   const filterButtons = document.querySelectorAll('.filter-btn');
   const navLinks = document.querySelectorAll('.main-nav a[data-view-target]');
   const sections = document.querySelectorAll('[data-view-section]');
+  
+  // 다국어 기능에 필요한 요소
+  const langSwitcher = document.querySelector('.lang-switcher');
 
-  // 데이터 로드 확인
+  // --- 2. 데이터 및 그리드 로드 확인 ---
   if (!grid || !window.lookbookData) {
     console.error('룩북 그리드 또는 데이터를 찾을 수 없습니다.');
     if (grid) {
@@ -20,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const allData = window.lookbookData;
 
-  // --- 1. 룩북 그리드 렌더링 함수 ---
+  // --- 3. [기존 기능] 룩북 그리드 렌더링 함수 ---
   function renderGrid(items) {
     if (items.length === 0) {
       grid.innerHTML = '<p>해당 카테고리의 룩이 없습니다.</p>';
@@ -31,7 +37,6 @@ document.addEventListener('DOMContentLoaded', () => {
     items.forEach(item => {
       const card = document.createElement('article');
       card.className = 'look-card';
-      // dataset을 통해 나중에 모달 등에서 ID를 참조할 수 있게 함
       card.dataset.id = item.id; 
       
       card.innerHTML = `
@@ -46,22 +51,69 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
       grid.appendChild(card);
     });
+    // 참고: 룩북 아이템(item.title) 자체의 번역은
+    // demo-data.js의 구조를 바꾸거나 이 함수 내에서 번역을 조회해야 합니다.
+    // 현재는 index.html의 정적 텍스트만 번역됩니다.
   }
 
-  // --- 2. 지표 업데이트 함수 ---
+  // --- 4. [기존 기능] 지표 업데이트 함수 ---
   function updateMetrics() {
     if (metricProducts) {
       metricProducts.textContent = allData.length;
     }
-    // TODO: 다른 지표들 (공급업체, 셀러 등)도 데이터 기반으로 업데이트
-    // 예: const suppliers = new Set(allData.map(item => item.supplier));
+    // TODO: 다른 지표들 (공급업체, 셀러 등)
+    // const suppliers = new Set(allData.map(item => item.supplier));
     // document.getElementById('metric-suppliers').textContent = suppliers.size;
   }
 
-  // --- 3. 필터 버튼 기능 구현 ---
+  // --- 5. [신규 기능] 번역 로드 및 적용 (i18n) ---
+  const setLanguage = async (lang) => {
+    const translations = await fetchTranslations(lang);
+    if (!translations) return; 
+
+    document.querySelectorAll('[data-i18n-key]').forEach(element => {
+      const key = element.dataset.i18nKey;
+      const translation = translations[key];
+      
+      if (translation) {
+        if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+          element.placeholder = translation;
+        } else {
+          element.textContent = translation;
+        }
+      }
+    });
+
+    document.documentElement.lang = lang;
+
+    if (langSwitcher) {
+      langSwitcher.querySelectorAll('button').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.lang === lang);
+      });
+    }
+    
+    localStorage.setItem('luce-lang', lang);
+  };
+
+  // --- 6. [신규 기능] 번역 JSON 파일 가져오기 (i18n) ---
+  const fetchTranslations = async (lang) => {
+    try {
+      // locales/ko.json, locales/en.json ...
+      const response = await fetch(`locales/${lang}.json`); 
+      if (!response.ok) {
+        throw new Error(`Failed to load ${lang}.json`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error(error);
+      // 기본 한국어 텍스트로 대체하거나 오류 메시지 표시
+      return null;
+    }
+  };
+
+  // --- 7. [기존 기능] 필터 버튼 이벤트 리스너 ---
   filterButtons.forEach(button => {
     button.addEventListener('click', () => {
-      // 활성 상태 변경
       filterButtons.forEach(btn => btn.classList.remove('active'));
       button.classList.add('active');
       
@@ -76,34 +128,51 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // --- 4. 네비게이션 스크롤 및 활성화 (SPA처럼 보이게) ---
+  // --- 8. [기존 기능] 네비게이션 (SPA) 이벤트 리스너 ---
   navLinks.forEach(link => {
     link.addEventListener('click', (e) => {
+      // 'admin.html'로 가는 링크는 기본 동작을 허용
+      if (link.getAttribute('href') === 'admin.html' || link.getAttribute('href') === 'signup.html') {
+        return; 
+      }
+      
       e.preventDefault();
       const targetId = link.dataset.viewTarget;
       const targetSection = document.getElementById(targetId);
       
       if (targetSection) {
-        // 모든 섹션 숨기기 (aria-hidden)
         sections.forEach(section => section.setAttribute('aria-hidden', 'true'));
-        // 타겟 섹션 보이기
         targetSection.setAttribute('aria-hidden', 'false');
 
-        // 네비게이션 활성 상태
         navLinks.forEach(nav => nav.classList.remove('active'));
         link.classList.add('active');
-        
-        // (참고: 스크롤 이동이 필요하면 아래 주석 해제)
-        // targetSection.scrollIntoView({ behavior: 'smooth' });
       }
     });
   });
+
+  // --- 9. [신규 기능] 언어 선택기 이벤트 리스너 (i18n) ---
+  if (langSwitcher) {
+    langSwitcher.addEventListener('click', (e) => {
+      if (e.target.tagName === 'BUTTON') {
+        const lang = e.target.dataset.lang;
+        if (lang) {
+          setLanguage(lang);
+        }
+      }
+    });
+  }
+
+  // --- 10. 초기화 실행 ---
   
-  // --- 5. 초기화 실행 ---
-  renderGrid(allData); // 처음 로드 시 전체 데이터 렌더링
-  updateMetrics(); // 지표 업데이트
+  // 10a. [신규] 언어 먼저 설정
+  const savedLang = localStorage.getItem('luce-lang') || 'ko';
+  await setLanguage(savedLang);
+
+  // 10b. [기존] 룩북 및 지표 렌더링
+  renderGrid(allData); 
+  updateMetrics(); 
   
-  // 페이지 로드 시 #lookbook을 기본으로 보여주기
+  // 10c. [기존] 기본 섹션 표시
   document.getElementById('lookbook')?.setAttribute('aria-hidden', 'false');
   document.querySelector('.main-nav a[data-view-target="lookbook"]')?.classList.add('active');
 
