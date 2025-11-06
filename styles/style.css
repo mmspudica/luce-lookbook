@@ -465,7 +465,7 @@ body {
   border: 1px solid #c3e6cb;
   display: block;
 }
-.form-feedback.error { 
+.form-fallback.error { 
   color: #721c24; 
   background-color: #f8d7da;
   border: 1px solid #f5c6cb;
@@ -502,37 +502,47 @@ body {
   line-height: 1.5;
 }
 
-/* 14. 헤더 추가 요소 (언어 선택기) */
+/* 14. [디자인 수정] 헤더 언어 선택기 */
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 16px; /* 선택기와 회원가입 버튼 사이 간격 */
+  gap: 20px; /* 회원가입 버튼과의 간격 */
 }
 
 .lang-switcher {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  gap: 6px; /* 텍스트/구분선 사이의 간격 */
 }
 
 .lang-switcher button {
-  padding: 4px 8px;
-  font-size: 12px;
-  font-weight: 600;
-  background: transparent;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
+  /* 버튼을 텍스트 링크처럼 보이게 */
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font-family: var(--font-family); /* 부모 폰트 상속 */
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-light); /* 기본 비활성 색상 */
   cursor: pointer;
-  color: var(--text-light);
-  transition: background-color 0.2s, color 0.2s;
+  transition: color 0.2s;
 }
 
 .lang-switcher button:hover {
-  background-color: var(--background-light);
-  color: var(--text-color);
+  color: var(--text-color); /* 마우스 올렸을 때 */
 }
 
 .lang-switcher button.active {
-  background-color: var(--primary-color);
-  color: white;
-  border-color: var(--primary-color);
+  /* 현재 활성화된 언어 */
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.lang-switcher span {
+  /* 구분선 (/) 스타일 */
+  color: var(--border-color);
+  font-size: 12px;
+  /* 사용자가 텍스트 선택하는 것을 방지 */
+  user-select: none; 
 }
