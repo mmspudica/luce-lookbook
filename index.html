@@ -8,6 +8,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
   
+  <!-- 
+    [가장 중요] CSS 파일 경로입니다.
+    만약 style.css가 'styles' 폴더 안이 아니라면 href="style.css"로 수정하세요.
+  -->
   <link rel="stylesheet" href="styles/style.css">
 </head>
 <body>
@@ -25,18 +29,22 @@
         <a href="admin.html" data-i18n-key="nav_admin">어드민</a>
       </nav>
       
+      <!-- [디자인 수정] 언어 선택기 + 회원가입 버튼 -->
       <div class="header-actions">
-        <div class="lang-switcher">
-          <button data-lang="ko" class="active" aria-label="한국어">KR</button>
-          <button data-lang="en" aria-label="English">EN</button>
-          <button data-lang="zh" aria-label="中文">CN</button>
-        </div>
+        <nav class="lang-switcher" aria-label="언어 선택">
+          <button data-lang="ko" class="active">한글</button>
+          <span>/</span>
+          <button data-lang="en">ENG</button>
+          <span>/</span>
+          <button data-lang="zh">中文</button>
+        </nav>
         <a class="btn ghost" href="signup.html" data-i18n-key="signup">회원가입</a>
       </div>
     </div>
   </header>
 
   <main>
+    <!-- 1. 룩북 섹션 -->
     <section id="lookbook" class="lookbook spotlight" data-view-section="lookbook">
       <div class="container">
         <div class="lookbook-top">
@@ -79,12 +87,14 @@
           <p class="metric-error" id="metric-error" role="status" aria-live="polite" hidden data-i18n-key="metric_error">지표를 불러오지 못했습니다.</p>
         </div>
 
+        <!-- app.js가 이 곳에 룩북 아이템을 채워넣습니다. -->
         <div class="lookbook-grid" id="lookbook-grid" aria-live="polite"></div>
         <div class="lookbook-loader" id="lookbook-loader" aria-hidden="true" data-i18n-key="lookbook_loader">다음 룩을 불러오는 중...</div>
         <div id="lookbook-sentinel" class="lookbook-sentinel" aria-hidden="true"></div>
       </div>
     </section>
 
+    <!-- 룩북 아이템 모달 -->
     <div id="look-modal" class="look-modal" aria-hidden="true">
       <div class="look-modal__backdrop" data-modal-close></div>
       <div class="look-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="look-modal-title" tabindex="-1">
@@ -94,6 +104,7 @@
       </div>
     </div>
 
+    <!-- 2. 셀렉션 섹션 -->
     <section id="selection" class="selection" data-view-section="selection" aria-hidden="true">
       <div class="container">
         <header class="section-header">
@@ -115,6 +126,7 @@
       </div>
     </section>
 
+    <!-- 3. 스튜디오 섹션 -->
     <section id="studio" class="studio" aria-labelledby="studio-title" data-view-section="studio" aria-hidden="true">
       <div class="container">
         <header class="section-header">
@@ -161,6 +173,7 @@
       </div>
     </section>
 
+    <!-- 4. 체크리스트 섹션 -->
     <section id="checklist" class="checklist" data-view-section="checklist" aria-hidden="true">
       <div class="container">
         <header class="section-header">
@@ -221,6 +234,10 @@
     </div>
   </footer>
 
+  <!-- 
+    [중요] 스크립트 파일 경로입니다.
+    'scripts' 폴더가 아닌 다른 곳에 있다면 경로를 수정하세요.
+  -->
   <script src="scripts/demo-data.js" defer></script>
   <script src="scripts/app.js" defer></script>
 </body>
