@@ -1,6 +1,15 @@
 <!DOCTYPE html>
-<html lang="ko"> <head>
-  </head>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LUCE Lookbook Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="styles/style.css">
+</head>
 <body>
   <header class="site-header">
     <div class="container header-inner">
@@ -38,7 +47,10 @@
           <div class="filter-group" role="group" aria-label="카테고리 필터">
             <button class="filter-btn active" data-filter="all" data-i18n-key="filter_all">전체</button>
             <button class="filter-btn" data-filter="fashion" data-i18n-key="filter_fashion">패션</button>
-            </div>
+            <button class="filter-btn" data-filter="beauty" data-i18n-key="filter_beauty">뷰티</button>
+            <button class="filter-btn" data-filter="wellness" data-i18n-key="filter_wellness">건기식</button>
+            <button class="filter-btn" data-filter="goods" data-i18n-key="filter_goods">잡화</button>
+          </div>
         </div>
 
         <div class="lookbook-metrics" id="lookbook-metrics" aria-live="polite">
@@ -49,7 +61,70 @@
               <span data-i18n-key="metric_updated">최근 업데이트</span> <span id="metric-updated">-</span>
             </p>
           </article>
+          <article class="metric-card">
+            <p class="metric-label" data-i18n-key="metric_suppliers">공급업체</p>
+            <p class="metric-value" id="metric-suppliers">0</p>
+            <p class="metric-caption" data-i18n-key="metric_suppliers_caption">라이브 준비 완료</p>
+          </article>
+          <article class="metric-card">
+            <p class="metric-label" data-i18n-key="metric_sellers">셀러 풀</p>
+            <p class="metric-value" id="metric-sellers">0</p>
+            <p class="metric-caption" data-i18n-key="metric_sellers_caption">셀렉션 대기</p>
+          </article>
+          <article class="metric-card">
+            <p class="metric-label" data-i18n-key="metric_members">일반회원</p>
+            <p class="metric-value" id="metric-members">0</p>
+            <p class="metric-caption" data-i18n-key="metric_members_caption">소식 구독</p>
+          </article>
+          <p class="metric-error" id="metric-error" role="status" aria-live="polite" hidden data-i18n-key="metric_error">지표를 불러오지 못했습니다.</p>
+        </div>
+
+        <div class="lookbook-grid" id="lookbook-grid" aria-live="polite"></div>
+        <div class="lookbook-loader" id="lookbook-loader" aria-hidden="true" data-i18n-key="lookbook_loader">다음 룩을 불러오는 중...</div>
+        <div id="lookbook-sentinel" class="lookbook-sentinel" aria-hidden="true"></div>
+      </div>
+    </section>
+
+    <div id="look-modal" class="look-modal" aria-hidden="true">
+      <div class="look-modal__backdrop" data-modal-close></div>
+      <div class="look-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="look-modal-title" tabindex="-1">
+        <button type="button" class="look-modal__close" data-modal-close aria-label="닫기"><span aria-hidden="true">×</span></button>
+        <div class="look-modal__media" id="look-modal-media"></div>
+        <div class="look-modal__body" id="look-modal-body"></div>
+      </div>
+    </div>
+
+    <section id="selection" class="selection" data-view-section="selection" aria-hidden="true">
+      <div class="container">
+        <header class="section-header">
+          <div>
+            <p class="tag">SELECTION</p>
+            <h2 data-i18n-key="selection_title">셀렉션 바구니</h2>
+            <p class="section-subtitle" data-i18n-key="selection_subtitle">스튜디오 요청 전까지 원하는 룩을 모아두세요. 카테고리별 필수 정보가 자동으로 매핑됩니다.</p>
           </div>
+          <button class="btn tertiary" id="export-looksheet" data-i18n-key="selection_export">룩시트 10초 생성</button>
+        </header>
+
+        <div class="selection-content">
+          <ul class="selection-list" id="selection-list" aria-live="assertive"></ul>
+          <div class="selection-summary" id="selection-summary">
+            <h3 data-i18n-key="selection_summary_title">요약</h3>
+            <p data-i18n-key="selection_summary_empty">현재 담은 룩이 없습니다.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="studio" class="studio" aria-labelledby="studio-title" data-view-section="studio" aria-hidden="true">
+      <div class="container">
+        <header class="section-header">
+          <div>
+            <p class="tag">STUDIO CHECKOUT</p>
+            <h2 id="studio-title" data-i18n-key="studio_title">스튜디오 셀렉션 체크아웃</h2>
+            <p class="section-subtitle" data-i18n-key="studio_subtitle">셀렉션 담기 → 스튜디오 예약까지 한 번에 완료하세요. 요청 → 승인 → 준비중 → 완료가 실시간으로 공유됩니다.</p>
+          </div>
+        </header>
+
         <form id="studio-request" class="studio-form">
           <div class="form-group">
             <label for="studio-seller" data-i18n-key="studio_seller_label">셀러 명</label>
@@ -57,10 +132,96 @@
                    placeholder="셀러 브랜드명을 입력하세요" 
                    data-i18n-key="studio_seller_placeholder" required>
           </div>
-          </form>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="studio-date" data-i18n-key="studio_date_label">요청 날짜</label>
+              <input id="studio-date" name="studio-date" type="date" required>
+            </div>
+            <div class="form-group">
+              <label for="studio-channel" data-i18n-key="studio_channel_label">방송 채널</label>
+              <select id="studio-channel" name="studio-channel" required>
+                <option value="" data-i18n-key="studio_channel_option_default">채널 선택</option>
+                <option value="네이버 쇼핑라이브" data-i18n-key="studio_channel_option_naver">네이버 쇼핑라이브</option>
+                <option value="카카오 쇼핑라이브" data-i18n-key="studio_channel_option_kakao">카카오 쇼핑라이브</option>
+                <option value="틱톡" data-i18n-key="studio_channel_option_tiktok">틱톡 라이브</option>
+                <option value="자체몰" data-i18n-key="studio_channel_option_self">자체몰 라이브</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="studio-notes" data-i18n-key="studio_notes_label">요청 메모</label>
+            <textarea id="studio-notes" name="studio-notes" rows="4" 
+                      placeholder="준비 요청 사항, 협의가 필요한 포인트를 적어주세요"
+                      data-i18n-key="studio_notes_placeholder"></textarea>
+          </div>
+          <button class="btn primary" type="submit" data-i18n-key="studio_submit">요청 등록</button>
+          <p class="form-feedback" id="studio-feedback" role="status" aria-live="polite"></p>
+        </form>
+
       </div>
     </section>
+
+    <section id="checklist" class="checklist" data-view-section="checklist" aria-hidden="true">
+      <div class="container">
+        <header class="section-header">
+          <div>
+            <p class="tag">CHECKLIST</p>
+            <h2 data-i18n-key="checklist_title">방송 준비 체크리스트</h2>
+            <p class="section-subtitle" data-i18n-key="checklist_subtitle">업로드 규칙, 검수, 세트 정리까지 문서 한 줄로 기록합니다.</p>
+          </div>
+        </header>
+
+        <div class="checklist-grid">
+          <article class="checklist-card">
+            <h3 data-i18n-key="checklist_card1_title">공급업체 업로드 규칙</h3>
+            <ul>
+              <li data-i18n-key="checklist_card1_li1">실측 4항목(어깨, 가슴, 총장, 소매) 필수 입력</li>
+              <li data-i18n-key="checklist_card1_li2">혼용률과 세탁 주의 문구 표준화</li>
+              <li data-i18n-key="checklist_card1_li3">사진 4장 이상 · 배경 흰색 유지</li>
+              <li data-i18n-key="checklist_card1_li4">재고 수량·입고 가능일 업데이트</li>
+            </ul>
+          </article>
+          <article class="checklist-card">
+            <h3 data-i18n-key="checklist_card2_title">스튜디오 준비</h3>
+            <ul>
+              <li data-i18n-key="checklist_card2_li1">사이즈 샘플 실측 재확인</li>
+              <li data-i18n-key="checklist_card2_li2">하자 체크 및 보수 여부 메모</li>
+              <li data-i18n-key="checklist_card2_li3">세트별 라벨링 및 스티밍 완료</li>
+              <li data-i18n-key="checklist_card2_li4">룩시트 출력 · 진행자 공유</li>
+            </ul>
+          </article>
+          <article class="checklist-card">
+            <h3 data-i18n-key="checklist_card3_title">교환·반품 기준</h3>
+            <ul>
+              <li data-i18n-key="checklist_card3_li1">착용 흔적·세탁 흔적이 있을 경우 제외</li>
+              <li data-i18n-key="checklist_card3_li2">원단 불량·배송 오배송 즉시 교환 진행</li>
+              <li data-i18n-key="checklist_card3_li3">라이브 중 공지한 조건 그대로 적용</li>
+              <li data-i18n-key="checklist_card3_li4">문서 기록 48시간 내 공유</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
   </main>
-  
-  </body>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div>
+        <div class="logo">
+          <img src="assets/luce-logo.svg" alt="LUCE" onerror="this.style.display='none'" />
+          <span class="logo__text">LUCE LOOKBOOK</span>
+        </div>
+        <p data-i18n-key="footer_subtitle">동대문 라이브커머스를 위한 준비 도구. 고른다 → 준비한다 → 방송한다.</p>
+      </div>
+      <div class="footer-meta">
+        <p data-i18n-key="footer_contact">문의: luce@lookbook.app · 02-000-0000</p>
+        <p data-i18n-key="footer_copyright">© 2025 LUCE Commerce Studio. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="scripts/demo-data.js" defer></script>
+  <script src="scripts/app.js" defer></script>
+</body>
 </html>
