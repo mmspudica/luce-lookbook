@@ -1,0 +1,15 @@
+{
+  "nav_lookbook": "Lookbook",
+  "nav_selection": "Selection",
+  "nav_studio": "Studio Selection",
+  "nav_checklist": "Checklist",
+  "nav_admin": "Admin",
+  "signup": "Sign Up",
+  "lookbook_title": "Selection for Live Prep",
+  "filter_all": "All",
+  "filter_fashion": "Fashion",
+  "metric_products": "Registered Looks",
+  "metric_updated": "Last updated",
+  "selection_title": "Selection Cart",
+  "selection_subtitle": "Collect looks before requesting the studio. Required information is mapped automatically by category."
+}
