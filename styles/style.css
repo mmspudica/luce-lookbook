@@ -9,9 +9,17 @@
   --text-color: #222222;
   --text-light: #555555;
   --text-lighter: #888888;
+  --text-secondary: #6b7280;
   --border-color: #eaeaea;
+  --border-default: #e0e4eb;
+  --border-subtle: #eef0f5;
   --background-color: #ffffff;
   --background-light: #f9f9f9;
+  --surface-muted: #f4f5fb;
+  --accent-primary: #7a63ff;
+  --container-width: 1200px;
+  --danger-strong: #c2273d;
+  --success-strong: #188160;
   --font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --radius-sm: 4px;
   --radius-md: 8px;
@@ -895,6 +903,7 @@ body.signup-body {
 }
 
 .member-type-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -952,30 +961,30 @@ body.signup-body {
   min-width: 140px;
 }
 
-.form-grid {
+.signup-panel .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 1.5rem;
 }
 
-.form-group {
+.signup-card .form-group {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
 }
 
-.form-group label {
+.signup-card .form-group label {
   font-weight: 600;
 }
 
-.form-group .required {
+.signup-card .form-group .required {
   color: var(--accent-primary);
   margin-left: 0.25rem;
 }
 
-.form-group input,
-.form-group textarea,
-.form-group select {
+.signup-card .form-group input,
+.signup-card .form-group textarea,
+.signup-card .form-group select {
   border-radius: 0.75rem;
   border: 1px solid var(--border-default);
   padding: 0.8rem 1rem;
@@ -984,29 +993,29 @@ body.signup-body {
   background: #fff;
 }
 
-.form-group input:focus,
-.form-group textarea:focus,
-.form-group select:focus {
+.signup-card .form-group input:focus,
+.signup-card .form-group textarea:focus,
+.signup-card .form-group select:focus {
   outline: none;
   border-color: var(--accent-primary);
   box-shadow: 0 0 0 4px rgba(122, 99, 255, 0.12);
 }
 
-.form-hint {
+.signup-card .form-hint {
   color: var(--text-secondary);
   font-size: 0.8rem;
 }
 
-.form-group.is-hidden {
+.signup-card .form-group.is-hidden {
   display: none;
 }
 
-[data-extra="business"].is-hidden,
-[data-extra="channels"].is-hidden {
+.signup-card [data-extra="business"].is-hidden,
+.signup-card [data-extra="channels"].is-hidden {
   display: none;
 }
 
-.consent-fieldset {
+.signup-panel .consent-fieldset {
   border: 1px solid var(--border-default);
   border-radius: 1rem;
   padding: 1.5rem;
@@ -1015,12 +1024,12 @@ body.signup-body {
   gap: 1rem;
 }
 
-.consent-fieldset legend {
+.signup-panel .consent-fieldset legend {
   font-weight: 700;
   padding: 0 0.5rem;
 }
 
-.policy-box {
+.signup-panel .policy-box {
   background: var(--surface-muted);
   border-radius: 0.75rem;
   padding: 1.25rem;
@@ -1032,19 +1041,19 @@ body.signup-body {
   border: 1px solid var(--border-subtle);
 }
 
-.policy-box h3 {
+.signup-panel .policy-box h3 {
   font-size: 1rem;
   font-weight: 600;
 }
 
-.policy-box ul {
+.signup-panel .policy-box ul {
   margin: 0;
   padding-left: 1.2rem;
   color: var(--text-secondary);
   font-size: 0.9rem;
 }
 
-.checkbox {
+.signup-card .checkbox {
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
@@ -1052,7 +1061,7 @@ body.signup-body {
   color: var(--text-secondary);
 }
 
-.checkbox input {
+.signup-card .checkbox input {
   margin-top: 0.2rem;
 }
 

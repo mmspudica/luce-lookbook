@@ -21,6 +21,31 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentStep = 1;
   let selectedUserType = null;
 
+  function resetFeedback() {
+    feedbackEl.textContent = '';
+    feedbackEl.classList.remove('error', 'success', 'loading');
+  }
+
+  function hideOptionalGroups() {
+    businessFieldGroups.forEach(group => {
+      group.classList.add('is-hidden');
+      const input = group.querySelector('input');
+      if (input) {
+        input.required = false;
+      }
+    });
+
+    channelFieldGroups.forEach(group => {
+      group.classList.add('is-hidden');
+      const input = group.querySelector('input');
+      if (input) {
+        input.required = false;
+      }
+    });
+  }
+
+  hideOptionalGroups();
+
   function setStep(step) {
     currentStep = step;
     stepButtons.forEach((btn, index) => {
@@ -29,6 +54,8 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.setAttribute('aria-selected', String(stepNumber === step));
       if (stepNumber <= step) {
         btn.removeAttribute('disabled');
+      } else {
+        btn.setAttribute('disabled', 'true');
       }
     });
 
@@ -39,6 +66,24 @@ document.addEventListener('DOMContentLoaded', () => {
       panel.setAttribute('aria-hidden', String(!isActive));
     });
   }
+
+  stepButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetStep = Number(btn.dataset.step);
+      if (Number.isNaN(targetStep) || targetStep > currentStep) {
+        return;
+      }
+
+      if (targetStep === 2 && !selectedUserType) {
+        feedbackEl.textContent = '회원 유형을 먼저 선택해주세요.';
+        feedbackEl.classList.add('error');
+        return;
+      }
+
+      resetFeedback();
+      setStep(targetStep);
+    });
+  });
 
   function updateFormForUserType(type) {
     selectedUserType = type;
@@ -79,12 +124,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   }
-
-  function resetFeedback() {
-    feedbackEl.textContent = '';
-    feedbackEl.classList.remove('error', 'success');
-  }
-
   userTypeRadios.forEach(radio => {
     radio.addEventListener('change', () => {
       resetFeedback();
@@ -105,11 +144,13 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    resetFeedback();
     setStep(2);
     document.getElementById('full_name').focus();
   });
 
   backToStep1.addEventListener('click', () => {
+    resetFeedback();
     setStep(1);
   });
 
@@ -205,6 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
       memberTypeCards.forEach(card => card.classList.remove('is-selected'));
       selectedUserType = null;
       toStep2Button.disabled = true;
+      hideOptionalGroups();
       setStep(3);
     } catch (error) {
       console.error('Signup error', error);
