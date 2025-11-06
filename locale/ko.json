@@ -1,0 +1,15 @@
+{
+  "nav_lookbook": "룩북",
+  "nav_selection": "셀렉션",
+  "nav_studio": "스튜디오 셀렉션",
+  "nav_checklist": "체크리스트",
+  "nav_admin": "어드민",
+  "signup": "회원가입",
+  "lookbook_title": "라이브 준비를 위한 셀렉션",
+  "filter_all": "전체",
+  "filter_fashion": "패션",
+  "metric_products": "등록된 룩",
+  "metric_updated": "최근 업데이트",
+  "selection_title": "셀렉션 바구니",
+  "selection_subtitle": "스튜디오 요청 전까지 원하는 룩을 모아두세요. 카테고리별 필수 정보가 자동으로 매핑됩니다."
+}
