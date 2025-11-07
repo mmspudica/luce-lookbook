@@ -155,9 +155,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const { count, error } = await query.select('id', { count: 'exact', head: true });
 
-      if (error) {
-        throw error;
-      }
+        if (!Array.isArray(data) || data.length === 0) {
+          hasMore = false;
+          continue;
+        }
 
       return typeof count === 'number' && Number.isFinite(count) ? count : 0;
     }
@@ -210,9 +211,11 @@ document.addEventListener('DOMContentLoaded', async () => {
           latestCreatedAt = first.created_at;
         }
       }
+
+      latestCreatedAt = latestValue;
     } catch (error) {
       encounteredError = true;
-      console.error('Failed to load latest profile timestamp', error);
+      console.error('Failed to load profile metrics', error);
     }
 
     cachedCounts = nextCounts;
