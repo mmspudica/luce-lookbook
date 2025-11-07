@@ -99,6 +99,40 @@ function translate(key) {
   return copy[lang]?.[key] ?? copy.ko[key] ?? key;
 }
 
+function normalizeBusinessRegistrationNumber(value = '') {
+  return value.replace(/\D/g, '').slice(0, 10);
+}
+
+function formatBusinessRegistrationNumber(value = '') {
+  const digits = normalizeBusinessRegistrationNumber(value);
+  if (!digits) {
+    return '';
+  }
+
+  const part1 = digits.slice(0, 3);
+  const part2 = digits.slice(3, 5);
+  const part3 = digits.slice(5, 10);
+  return [part1, part2, part3].filter(Boolean).join('-');
+}
+
+const platformLabelMap = {
+  youtube: 'YouTube',
+  tiktok: 'TikTok',
+  instagram: 'Instagram',
+  grab: 'Grab',
+  clickmate: 'Clickmate',
+  other: 'Other'
+};
+
+function formatPlatformLabel(value) {
+  if (!value) {
+    return '';
+  }
+
+  const normalized = value.toString().trim().toLowerCase();
+  return platformLabelMap[normalized] || value;
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   if (!supabaseClient) {
     console.error('Supabase client is missing.');
@@ -121,8 +155,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   const memberTypeCards = document.querySelectorAll('.member-type-card');
   const termsConsent = document.getElementById('terms_consent');
   const selectedTypeHelp = document.getElementById('selected-type-help');
+  const businessRegistrationInput = document.getElementById('business_registration_number');
   let currentStep = 1;
   let selectedUserType = null;
+
+  if (businessRegistrationInput) {
+    businessRegistrationInput.addEventListener('input', () => {
+      const formatted = formatBusinessRegistrationNumber(businessRegistrationInput.value);
+      businessRegistrationInput.value = formatted;
+    });
+
+    businessRegistrationInput.addEventListener('blur', () => {
+      const formatted = formatBusinessRegistrationNumber(businessRegistrationInput.value);
+      businessRegistrationInput.value = formatted;
+    });
+  }
 
   function resetFeedback() {
     feedbackEl.textContent = '';
@@ -226,11 +273,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
 
-    const registrationInput = document.getElementById('business_registration_number');
-    if (registrationInput) {
-      registrationInput.required = isSupplier;
+    if (businessRegistrationInput) {
+      businessRegistrationInput.required = isSupplier;
       if (!isSupplier) {
-        registrationInput.value = '';
+        businessRegistrationInput.value = '';
       }
     }
 
@@ -306,7 +352,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   function getSelectedPlatforms() {
-    return Array.from(form.querySelectorAll('input[name="main_platforms"]:checked')).map(input => input.value);
+    return Array.from(form.querySelectorAll('input[name="main_platforms"]:checked'))
+      .map(input => input.value?.toString().trim())
+      .filter(Boolean);
   }
 
   document.addEventListener('luce:language-changed', () => {
@@ -336,6 +384,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const formData = new FormData(form);
     const selectedPlatforms = getSelectedPlatforms();
+    const databasePlatforms = selectedPlatforms.map(platform => platform.toLowerCase());
+    const businessRegistrationRaw = formData.get('business_registration_number')?.toString().trim() || '';
+    const businessRegistrationSanitized = normalizeBusinessRegistrationNumber(businessRegistrationRaw);
     const payload = {
       user_type: selectedUserType,
       full_name: formData.get('full_name')?.toString().trim() || '',
@@ -344,8 +395,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       phone_number: formData.get('phone_number')?.toString().trim() || '',
       marketing_consent: formData.get('marketing_consent') === 'on',
       company_name: formData.get('company_name')?.toString().trim() || '',
-      business_registration_number: formData.get('business_registration_number')?.toString().trim() || '',
-      main_platforms: selectedPlatforms,
+      business_registration_number: businessRegistrationSanitized,
+      main_platforms: databasePlatforms,
       channel_url: formData.get('channel_url')?.toString().trim() || ''
     };
 
@@ -411,14 +462,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         user_type: payload.user_type,
         full_name: payload.full_name,
         phone_number: payload.phone_number,
-        marketing_consent: payload.marketing_consent,
+        marketing_consent: Boolean(payload.marketing_consent),
         company_name: payload.company_name || null,
         business_registration_number: payload.business_registration_number || null,
         main_platforms: payload.main_platforms.length ? payload.main_platforms : null,
         channel_url: payload.channel_url || null
       };
 
-      const { error: profileError } = await supabaseClient.from('profiles').insert(profilePayload);
+      const { error: profileError } = await supabaseClient
+        .from('profiles')
+        .upsert(profilePayload, { onConflict: 'id' });
 
       if (profileError) {
         throw profileError;
@@ -433,8 +486,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         phone_number: payload.phone_number,
         marketing_consent: payload.marketing_consent,
         company_name: payload.company_name,
-        business_registration_number: payload.business_registration_number,
-        main_platforms: [...payload.main_platforms],
+        business_registration_number: formatBusinessRegistrationNumber(payload.business_registration_number),
+        main_platforms: selectedPlatforms.map(formatPlatformLabel),
         channel_url: payload.channel_url
       };
 
