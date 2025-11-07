@@ -8,11 +8,11 @@ const copy = {
     processing: '가입을 처리하고 있습니다. 잠시만 기다려주세요...',
     duplicateChannel: '이미 등록된 채널 URL입니다. 다른 URL을 입력해주세요.',
     platformRequired: '주요 판매 플랫폼을 최소 1개 이상 선택해주세요.',
-    signupSuccess: '가입이 완료되었습니다. 이메일 인증을 진행해주세요.',
+    signupSuccess: '가입이 완료되었습니다. 환영합니다!',
     signupError: '가입 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
     noSupabase: '시스템 설정에 문제가 있습니다. 잠시 후 다시 시도해주세요.',
     help_supplier: '공급업체는 회사/브랜드명과 사업자등록번호를 필수로 입력해야 합니다.',
-    help_seller: '셀러는 회사/브랜드명과 운영 중인 채널 정보를 알려주세요.',
+    help_seller: '셀러는 연락 가능한 정보를 입력하고 운영 중인 채널을 알려주세요.',
     help_member: '일반회원은 기본 연락처만 입력하면 가입이 완료됩니다.',
     previewTitle: '신청 정보 미리보기',
     previewUserType: '회원 유형',
@@ -37,11 +37,11 @@ const copy = {
     processing: 'Processing your registration. Please wait...',
     duplicateChannel: 'This channel URL is already registered. Please use a different one.',
     platformRequired: 'Select at least one primary platform.',
-    signupSuccess: 'Registration complete. Please verify your email.',
+    signupSuccess: 'Registration complete. Welcome aboard!',
     signupError: 'An error occurred while signing up. Please try again later.',
     noSupabase: 'Configuration error detected. Please try again soon.',
     help_supplier: 'Suppliers must provide a company/brand name and business registration number.',
-    help_seller: 'Sellers should add a company/brand name and share active channel details.',
+    help_seller: 'Sellers should share reachable contact details and tell us about active channels.',
     help_member: 'Members can join with just their basic contact information.',
     previewTitle: 'Registration Preview',
     previewUserType: 'Member Type',
@@ -66,11 +66,11 @@ const copy = {
     processing: '正在处理您的注册，请稍候……',
     duplicateChannel: '该频道 URL 已被注册，请输入其他地址。',
     platformRequired: '请至少选择一个主要销售平台。',
-    signupSuccess: '注册完成。请前往邮箱完成验证。',
+    signupSuccess: '注册完成，欢迎加入！',
     signupError: '注册过程中发生错误，请稍后再试。',
     noSupabase: '系统配置出现问题，请稍后再试。',
     help_supplier: '供应商需填写公司/品牌名称及营业执照号码。',
-    help_seller: '卖家需填写公司/品牌名称并提供正在运营的频道信息。',
+    help_seller: '卖家请填写可联系信息，并告知正在运营的频道。',
     help_member: '普通会员仅需填写基本联系方式即可完成注册。',
     previewTitle: '注册信息预览',
     previewUserType: '会员类型',
@@ -121,8 +121,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const memberTypeCards = document.querySelectorAll('.member-type-card');
   const termsConsent = document.getElementById('terms_consent');
   const selectedTypeHelp = document.getElementById('selected-type-help');
-  const previewContainer = document.getElementById('signup-preview');
-
   let currentStep = 1;
   let selectedUserType = null;
 
@@ -213,7 +211,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const isSupplier = type === 'supplier';
     const isSeller = type === 'seller';
-    const showBusiness = isSupplier || isSeller;
+    const showBusiness = isSupplier;
     const showChannel = isSeller;
     const showPlatforms = isSeller;
 
@@ -311,47 +309,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     return Array.from(form.querySelectorAll('input[name="main_platforms"]:checked')).map(input => input.value);
   }
 
-  function renderPreview(payload) {
-    if (!previewContainer) return;
-
-    previewContainer.innerHTML = '';
-
-    const title = document.createElement('h3');
-    title.textContent = translate('previewTitle');
-    previewContainer.appendChild(title);
-
-    const list = document.createElement('dl');
-    list.classList.add('preview-list');
-
-    const entries = [
-      { label: translate('previewUserType'), value: translate(`userType_${payload.user_type}`) },
-      { label: translate('previewName'), value: payload.full_name },
-      { label: translate('previewEmail'), value: payload.email },
-      { label: translate('previewPhone'), value: payload.phone_number },
-      { label: translate('previewCompany'), value: payload.company_name },
-      { label: translate('previewBusinessNumber'), value: payload.business_registration_number },
-      { label: translate('previewPlatforms'), value: payload.main_platforms?.length ? payload.main_platforms.join(', ') : '' },
-      { label: translate('previewChannel'), value: payload.channel_url },
-      {
-        label: translate('previewMarketing'),
-        value: payload.marketing_consent ? translate('previewMarketingYes') : translate('previewMarketingNo')
-      }
-    ];
-
-    entries
-      .filter(entry => entry.value && String(entry.value).trim().length > 0)
-      .forEach(entry => {
-        const dt = document.createElement('dt');
-        dt.textContent = entry.label;
-        const dd = document.createElement('dd');
-        dd.textContent = entry.value;
-        list.appendChild(dt);
-        list.appendChild(dd);
-      });
-
-    previewContainer.appendChild(list);
-  }
-
   document.addEventListener('luce:language-changed', () => {
     if (feedbackEl.dataset.copyKey) {
       feedbackEl.textContent = translate(feedbackEl.dataset.copyKey);
@@ -359,16 +316,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (selectedUserType) {
       updateTypeHelp(selectedUserType);
-    }
-
-    const storedPreview = previewContainer?.dataset.payload;
-    if (storedPreview) {
-      try {
-        const data = JSON.parse(storedPreview);
-        renderPreview(data);
-      } catch (error) {
-        console.error('Preview parse error', error);
-      }
     }
   });
 
@@ -402,18 +349,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       channel_url: formData.get('channel_url')?.toString().trim() || ''
     };
 
-    const previewData = {
-      user_type: payload.user_type,
-      full_name: payload.full_name,
-      email: payload.email,
-      phone_number: payload.phone_number,
-      marketing_consent: payload.marketing_consent,
-      company_name: payload.company_name,
-      business_registration_number: payload.business_registration_number,
-      main_platforms: [...payload.main_platforms],
-      channel_url: payload.channel_url
-    };
-
     if (!form.reportValidity()) {
       setFeedback('error', 'formInvalid');
       return;
@@ -434,7 +369,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       if (payload.channel_url) {
         const { count, error: duplicateError } = await supabaseClient
-          .from('profile')
+          .from('profiles')
           .select('id', { count: 'exact', head: true })
           .eq('channel_url', payload.channel_url);
 
@@ -457,8 +392,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             full_name: payload.full_name,
             phone_number: payload.phone_number,
             company_name: payload.company_name
-          },
-          emailRedirectTo: `${window.location.origin}/index.html`
+          }
         }
       });
 
@@ -480,11 +414,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         marketing_consent: payload.marketing_consent,
         company_name: payload.company_name || null,
         business_registration_number: payload.business_registration_number || null,
-        main_platforms: payload.main_platforms.length ? payload.main_platforms.join(', ') : null,
+        main_platforms: payload.main_platforms.length ? payload.main_platforms : null,
         channel_url: payload.channel_url || null
       };
 
-      const { error: profileError } = await supabaseClient.from('profile').insert(profilePayload);
+      const { error: profileError } = await supabaseClient.from('profiles').insert(profilePayload);
 
       if (profileError) {
         throw profileError;
@@ -492,17 +426,25 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       setFeedback('success', 'signupSuccess');
 
-      if (previewContainer) {
-        previewContainer.dataset.payload = JSON.stringify(previewData);
-      }
-      renderPreview(previewData);
+      const previewData = {
+        user_type: payload.user_type,
+        full_name: payload.full_name,
+        email: payload.email,
+        phone_number: payload.phone_number,
+        marketing_consent: payload.marketing_consent,
+        company_name: payload.company_name,
+        business_registration_number: payload.business_registration_number,
+        main_platforms: [...payload.main_platforms],
+        channel_url: payload.channel_url
+      };
 
-      form.reset();
-      memberTypeCards.forEach(card => card.classList.remove('is-selected'));
-      selectedUserType = null;
-      toStep2Button.disabled = true;
-      hideOptionalGroups();
-      setStep(3);
+      try {
+        sessionStorage.setItem('signupPreview', JSON.stringify(previewData));
+      } catch (storageError) {
+        console.warn('Preview storage failed', storageError);
+      }
+
+      window.location.href = 'signupSuccess.html';
     } catch (error) {
       console.error('Signup error', error);
       setFeedback('error', null, error.message || translate('signupError'));
