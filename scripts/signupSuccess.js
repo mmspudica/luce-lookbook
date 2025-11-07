@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     },
     {
       labelKey: 'signup_preview_phone_label',
-      getValue: () => previewData.phone_number
+      getValue: () => formatPhoneNumber(previewData.phone_number)
     },
     {
       labelKey: 'signup_preview_company_label',
@@ -191,4 +191,25 @@ function formatPlatformLabel(value) {
 
   const normalized = value.toString().trim().toLowerCase();
   return platformLabelMap[normalized] || value;
+}
+
+function normalizePhoneNumber(value = '') {
+  return value?.toString().replace(/\D/g, '').slice(0, 11) || '';
+}
+
+function formatPhoneNumber(value = '') {
+  const digits = normalizePhoneNumber(value);
+  if (!digits) {
+    return '';
+  }
+
+  if (digits.length < 4) {
+    return digits;
+  }
+
+  if (digits.length < 8) {
+    return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  }
+
+  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7, 11)}`;
 }

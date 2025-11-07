@@ -296,23 +296,26 @@ document.addEventListener('DOMContentLoaded', async () => {
       return defaultCounts;
     }
 
-    const types = ['supplier', 'seller', 'member'];
+    const { data, error } = await supabaseClient
+      .from('profiles')
+      .select('user_type, count:id', { head: false })
+      .group('user_type');
+
+    if (error) {
+      throw error;
+    }
+
     const counts = { ...defaultCounts };
 
-    await Promise.all(
-      types.map(async type => {
-        const { count, error } = await supabaseClient
-          .from('profiles')
-          .select('id', { count: 'exact', head: true })
-          .eq('user_type', type);
-
-        if (error) {
-          throw error;
+    if (Array.isArray(data)) {
+      data.forEach(entry => {
+        const type = entry.user_type;
+        const value = typeof entry.count === 'number' ? entry.count : parseInt(entry.count, 10);
+        if (Object.prototype.hasOwnProperty.call(counts, type) && Number.isFinite(value)) {
+          counts[type] = value;
         }
-
-        counts[type] = count ?? 0;
-      })
-    );
+      });
+    }
 
     return counts;
   }
@@ -355,7 +358,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         throw error;
       }
 
-      cachedProfiles = Array.isArray(data) ? data : [];
+      cachedProfiles = Array.isArray(data)
+        ? data.map(profile => ({
+          ...profile,
+          marketing_consent: profile.marketing_consent === true
+        }))
+        : [];
       lastRenderError = false;
       lastErrorKey = null;
       let counts = null;

@@ -115,6 +115,27 @@ function formatBusinessRegistrationNumber(value = '') {
   return [part1, part2, part3].filter(Boolean).join('-');
 }
 
+function normalizePhoneNumber(value = '') {
+  return value.replace(/\D/g, '').slice(0, 11);
+}
+
+function formatPhoneNumber(value = '') {
+  const digits = normalizePhoneNumber(value);
+  if (!digits) {
+    return '';
+  }
+
+  if (digits.length < 4) {
+    return digits;
+  }
+
+  if (digits.length < 8) {
+    return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  }
+
+  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7, 11)}`;
+}
+
 const platformLabelMap = {
   youtube: 'YouTube',
   tiktok: 'TikTok',
@@ -156,6 +177,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const termsConsent = document.getElementById('terms_consent');
   const selectedTypeHelp = document.getElementById('selected-type-help');
   const businessRegistrationInput = document.getElementById('business_registration_number');
+  const phoneNumberInput = document.getElementById('phone_number');
   let currentStep = 1;
   let selectedUserType = null;
 
@@ -168,6 +190,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     businessRegistrationInput.addEventListener('blur', () => {
       const formatted = formatBusinessRegistrationNumber(businessRegistrationInput.value);
       businessRegistrationInput.value = formatted;
+    });
+  }
+
+  if (phoneNumberInput) {
+    phoneNumberInput.addEventListener('input', () => {
+      const formatted = formatPhoneNumber(phoneNumberInput.value);
+      phoneNumberInput.value = formatted;
+    });
+
+    phoneNumberInput.addEventListener('blur', () => {
+      const formatted = formatPhoneNumber(phoneNumberInput.value);
+      phoneNumberInput.value = formatted;
     });
   }
 
@@ -387,12 +421,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const databasePlatforms = selectedPlatforms.map(platform => platform.toLowerCase());
     const businessRegistrationRaw = formData.get('business_registration_number')?.toString().trim() || '';
     const businessRegistrationSanitized = normalizeBusinessRegistrationNumber(businessRegistrationRaw);
+    const phoneNumberRaw = formData.get('phone_number')?.toString().trim() || '';
+    const phoneNumberSanitized = normalizePhoneNumber(phoneNumberRaw);
     const payload = {
       user_type: selectedUserType,
       full_name: formData.get('full_name')?.toString().trim() || '',
       email: formData.get('email')?.toString().trim() || '',
       password: formData.get('password')?.toString().trim() || '',
-      phone_number: formData.get('phone_number')?.toString().trim() || '',
+      phone_number: phoneNumberSanitized,
       marketing_consent: formData.get('marketing_consent') === 'on',
       company_name: formData.get('company_name')?.toString().trim() || '',
       business_registration_number: businessRegistrationSanitized,
@@ -461,8 +497,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         id: userId,
         user_type: payload.user_type,
         full_name: payload.full_name,
-        phone_number: payload.phone_number,
-        marketing_consent: Boolean(payload.marketing_consent),
+        phone_number: payload.phone_number || null,
+        marketing_consent: payload.marketing_consent === true,
         company_name: payload.company_name || null,
         business_registration_number: payload.business_registration_number || null,
         main_platforms: payload.main_platforms.length ? payload.main_platforms : null,
@@ -474,7 +510,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         .upsert(profilePayload, { onConflict: 'id' });
 
       if (profileError) {
-        throw profileError;
+        const isDuplicateKey =
+          profileError.code === '23505' ||
+          profileError.message?.includes('duplicate key value violates unique constraint "profiles_pkey"');
+
+        if (isDuplicateKey) {
+          const updatePayload = { ...profilePayload };
+          delete updatePayload.id;
+
+          const { error: updateError } = await supabaseClient
+            .from('profiles')
+            .update(updatePayload)
+            .eq('id', userId);
+
+          if (updateError) {
+            throw updateError;
+          }
+        } else {
+          throw profileError;
+        }
       }
 
       setFeedback('success', 'signupSuccess');
@@ -483,7 +537,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         user_type: payload.user_type,
         full_name: payload.full_name,
         email: payload.email,
-        phone_number: payload.phone_number,
+        phone_number: formatPhoneNumber(payload.phone_number),
         marketing_consent: payload.marketing_consent,
         company_name: payload.company_name,
         business_registration_number: formatBusinessRegistrationNumber(payload.business_registration_number),
