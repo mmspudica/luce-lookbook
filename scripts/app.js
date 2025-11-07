@@ -290,7 +290,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     try {
       const { data, error } = await supabaseClient
-        .from('profile')
+        .from('profiles')
         .select('id, user_type, full_name, company_name, main_platforms, channel_url, marketing_consent, created_at')
         .order('created_at', { ascending: false })
         .limit(50);

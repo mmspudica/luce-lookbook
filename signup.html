@@ -40,7 +40,6 @@
       <div class="signup-steps" role="tablist" aria-label="회원가입 단계">
         <button type="button" class="signup-step is-active" id="step-1-tab" data-step="1" aria-selected="true" aria-controls="step-panel-1" data-i18n-key="signup_step_select">1. 회원 유형 선택</button>
         <button type="button" class="signup-step" id="step-2-tab" data-step="2" aria-selected="false" aria-controls="step-panel-2" disabled data-i18n-key="signup_step_form">2. 정보 입력</button>
-        <button type="button" class="signup-step" id="step-3-tab" data-step="3" aria-selected="false" aria-controls="step-panel-3" disabled data-i18n-key="signup_step_complete">3. 완료</button>
       </div>
 
       <form id="signup-form" novalidate>
@@ -174,14 +173,6 @@
           </div>
         </section>
 
-        <section class="signup-panel" id="step-panel-3" data-step-panel="3" role="tabpanel" aria-labelledby="step-3-tab" aria-hidden="true" hidden>
-          <div class="signup-complete">
-            <h2 data-i18n-key="signup_complete_title">가입 신청이 완료되었습니다.</h2>
-            <p data-i18n-key="signup_complete_message">입력하신 이메일 주소로 인증 메일을 전송했습니다. 메일 확인 후 로그인해주세요.</p>
-            <div class="signup-complete__preview" id="signup-preview" aria-live="polite"></div>
-            <a class="btn primary" href="index.html" data-i18n-key="signup_complete_home">메인으로 돌아가기</a>
-          </div>
-        </section>
       </form>
 
       <p class="signup-feedback" id="signup-feedback" role="status" aria-live="polite"></p>
