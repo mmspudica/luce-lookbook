@@ -94,7 +94,8 @@ img {
 }
 
 .logo img {
-  height: 24px;
+  height: 48px;
+  width: auto;
 }
 
 .logo__text {
