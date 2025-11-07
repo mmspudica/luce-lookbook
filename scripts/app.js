@@ -54,6 +54,15 @@ const localeMap = {
   zh: 'zh-CN'
 };
 
+const platformLabelMap = {
+  youtube: 'YouTube',
+  tiktok: 'TikTok',
+  instagram: 'Instagram',
+  grab: 'Grab',
+  clickmate: 'Clickmate',
+  other: 'Other'
+};
+
 document.addEventListener('DOMContentLoaded', async () => {
   const grid = document.getElementById('lookbook-grid');
   const metricProducts = document.getElementById('metric-products');
@@ -81,6 +90,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const allData = window.lookbookData;
   let cachedProfiles = [];
+  let cachedCounts = { supplier: 0, seller: 0, member: 0 };
   let lastRenderError = false;
   let lastErrorKey = null;
 
@@ -102,6 +112,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     const lang = getLang();
     const key = consent ? 'yes' : 'no';
     return dynamicCopy[lang]?.marketing?.[key] ?? dynamicCopy.ko.marketing[key];
+  }
+
+  function formatPlatformLabel(value) {
+    if (!value) {
+      return '';
+    }
+
+    const normalized = value.toString().trim().toLowerCase();
+    return platformLabelMap[normalized] || value;
   }
 
   function formatDate(value) {
@@ -150,14 +169,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  function updateMetricsFromProfiles(profiles = []) {
+  function updateMetricsFromProfiles(profiles = [], counts = null) {
     if (metricProducts) {
       metricProducts.textContent = allData.length;
     }
 
-    const supplierCount = profiles.filter(profile => profile.user_type === 'supplier').length;
-    const sellerCount = profiles.filter(profile => profile.user_type === 'seller').length;
-    const memberCount = profiles.filter(profile => profile.user_type === 'member').length;
+    const activeCounts = counts || cachedCounts || { supplier: 0, seller: 0, member: 0 };
+    const supplierCount = Number.isFinite(activeCounts.supplier) ? activeCounts.supplier : 0;
+    const sellerCount = Number.isFinite(activeCounts.seller) ? activeCounts.seller : 0;
+    const memberCount = Number.isFinite(activeCounts.member) ? activeCounts.member : 0;
 
     if (metricSuppliers) {
       metricSuppliers.textContent = supplierCount;
@@ -170,7 +190,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     if (metricUpdated) {
       const latest = profiles[0]?.created_at;
-      metricUpdated.textContent = formatDate(latest);
+      metricUpdated.textContent = latest ? formatDate(latest) : '-';
     }
 
     if (metricError) {
@@ -221,12 +241,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       const platformCell = document.createElement('td');
       let platforms = '-';
       if (Array.isArray(profile.main_platforms)) {
-        const normalized = profile.main_platforms.map(platform => platform?.trim()).filter(Boolean);
+        const normalized = profile.main_platforms
+          .map(platform => formatPlatformLabel(platform))
+          .filter(value => value && value.trim().length > 0);
         platforms = normalized.length ? normalized.join(', ') : '-';
       } else if (typeof profile.main_platforms === 'string') {
         platforms = profile.main_platforms
           .split(',')
-          .map(platform => platform.trim())
+          .map(platform => formatPlatformLabel(platform.trim()))
           .filter(Boolean)
           .join(', ') || '-';
       }
@@ -267,6 +289,37 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  async function fetchProfileCounts() {
+    const defaultCounts = { supplier: 0, seller: 0, member: 0 };
+
+    if (!supabaseClient) {
+      return defaultCounts;
+    }
+
+    const { data, error } = await supabaseClient
+      .from('profiles')
+      .select('user_type, count:id', { head: false })
+      .group('user_type');
+
+    if (error) {
+      throw error;
+    }
+
+    const counts = { ...defaultCounts };
+
+    if (Array.isArray(data)) {
+      data.forEach(entry => {
+        const type = entry.user_type;
+        const value = typeof entry.count === 'number' ? entry.count : parseInt(entry.count, 10);
+        if (Object.prototype.hasOwnProperty.call(counts, type) && Number.isFinite(value)) {
+          counts[type] = value;
+        }
+      });
+    }
+
+    return counts;
+  }
+
   async function fetchProfiles() {
     if (!signupStatusBody) {
       return;
@@ -305,11 +358,33 @@ document.addEventListener('DOMContentLoaded', async () => {
         throw error;
       }
 
-      cachedProfiles = Array.isArray(data) ? data : [];
+      cachedProfiles = Array.isArray(data)
+        ? data.map(profile => ({
+          ...profile,
+          marketing_consent: profile.marketing_consent === true
+        }))
+        : [];
       lastRenderError = false;
       lastErrorKey = null;
+      let counts = null;
+      let countsFailed = false;
+
+      try {
+        counts = await fetchProfileCounts();
+        cachedCounts = counts;
+      } catch (countError) {
+        console.error('Failed to load profile counts', countError);
+        countsFailed = true;
+        counts = cachedCounts;
+      }
+
       renderSignupStatus(cachedProfiles);
-      updateMetricsFromProfiles(cachedProfiles);
+      updateMetricsFromProfiles(cachedProfiles, counts);
+
+      if (countsFailed && metricError) {
+        metricError.hidden = false;
+        metricError.removeAttribute('hidden');
+      }
     } catch (error) {
       console.error('Failed to load signup profiles', error);
       cachedProfiles = [];
@@ -361,7 +436,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   renderGrid(allData);
-  updateMetricsFromProfiles([]);
+  updateMetricsFromProfiles([], cachedCounts);
   fetchProfiles();
 
   document.getElementById('lookbook')?.setAttribute('aria-hidden', 'false');
@@ -370,7 +445,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.addEventListener('luce:language-changed', () => {
     if (lastRenderError) {
       renderSignupStatus([], lastErrorKey || 'error');
-      updateMetricsFromProfiles([]);
+      updateMetricsFromProfiles([], cachedCounts);
       if (metricError) {
         metricError.hidden = false;
         metricError.removeAttribute('hidden');
@@ -379,6 +454,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     renderSignupStatus(cachedProfiles);
-    updateMetricsFromProfiles(cachedProfiles);
+    updateMetricsFromProfiles(cachedProfiles, cachedCounts);
   });
 });

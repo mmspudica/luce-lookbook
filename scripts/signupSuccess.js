@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     },
     {
       labelKey: 'signup_preview_phone_label',
-      getValue: () => previewData.phone_number
+      getValue: () => formatPhoneNumber(previewData.phone_number)
     },
     {
       labelKey: 'signup_preview_company_label',
@@ -56,11 +56,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     },
     {
       labelKey: 'signup_preview_business_label',
-      getValue: () => previewData.business_registration_number
+      getValue: () => formatBusinessRegistrationNumber(previewData.business_registration_number) || previewData.business_registration_number
     },
     {
       labelKey: 'signup_preview_platforms_label',
-      getValue: () => (previewData.main_platforms && previewData.main_platforms.length ? previewData.main_platforms.join(', ') : '')
+      getValue: () => {
+        if (!Array.isArray(previewData.main_platforms) || previewData.main_platforms.length === 0) {
+          return '';
+        }
+
+        return previewData.main_platforms.map(formatPlatformLabel).filter(Boolean).join(', ');
+      }
     },
     {
       labelKey: 'signup_preview_channel_label',
@@ -151,4 +157,59 @@ function getFallbackLabel(key) {
   };
 
   return fallbacks[key] || '';
+}
+
+function normalizeBusinessRegistrationNumber(value = '') {
+  return value?.toString().replace(/\D/g, '').slice(0, 10) || '';
+}
+
+function formatBusinessRegistrationNumber(value = '') {
+  const digits = normalizeBusinessRegistrationNumber(value);
+  if (!digits) {
+    return '';
+  }
+
+  const part1 = digits.slice(0, 3);
+  const part2 = digits.slice(3, 5);
+  const part3 = digits.slice(5, 10);
+  return [part1, part2, part3].filter(Boolean).join('-');
+}
+
+const platformLabelMap = {
+  youtube: 'YouTube',
+  tiktok: 'TikTok',
+  instagram: 'Instagram',
+  grab: 'Grab',
+  clickmate: 'Clickmate',
+  other: 'Other'
+};
+
+function formatPlatformLabel(value) {
+  if (!value) {
+    return '';
+  }
+
+  const normalized = value.toString().trim().toLowerCase();
+  return platformLabelMap[normalized] || value;
+}
+
+function normalizePhoneNumber(value = '') {
+  return value?.toString().replace(/\D/g, '').slice(0, 11) || '';
+}
+
+function formatPhoneNumber(value = '') {
+  const digits = normalizePhoneNumber(value);
+  if (!digits) {
+    return '';
+  }
+
+  if (digits.length < 4) {
+    return digits;
+  }
+
+  if (digits.length < 8) {
+    return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  }
+
+  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7, 11)}`;
 }
