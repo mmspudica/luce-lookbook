@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LUCE 가입 완료</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles/style.css?v=1.0.1">
+</head>
+<body class="signup-body">
+  <header class="signup-header">
+    <div class="signup-header__inner">
+      <a class="logo" href="/">
+        <img src="assets/luce_logo_main.png" alt="LUCE" />
+        <span class="logo__text">LUCE LOOKBOOK</span>
+      </a>
+      <div class="header-actions">
+        <nav class="lang-switcher" aria-label="언어 선택">
+          <button data-lang="ko" class="active">한글</button>
+          <span>/</span>
+          <button data-lang="en">ENG</button>
+          <span>/</span>
+          <button data-lang="zh">中文</button>
+        </nav>
+        <a class="btn ghost" href="index.html" data-i18n-key="signup_success_home">메인으로</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="signup-main">
+    <section class="signup-card" aria-labelledby="signup-success-title">
+      <header class="signup-card__header">
+        <p class="tag" data-i18n-key="signup_success_tag">SIGNUP COMPLETE</p>
+        <h1 id="signup-success-title" data-i18n-key="signup_success_title">가입 신청이 접수되었습니다.</h1>
+        <p class="signup-card__subtitle" data-i18n-key="signup_success_subtitle">담당 매니저가 확인 후 연락드릴 예정입니다. 아래 정보를 다시 확인해주세요.</p>
+      </header>
+
+      <div class="signup-steps" role="tablist" aria-label="회원가입 단계">
+        <button type="button" class="signup-step" data-step="1" aria-selected="false" disabled data-i18n-key="signup_step_select">1. 회원 유형 선택</button>
+        <button type="button" class="signup-step" data-step="2" aria-selected="false" disabled data-i18n-key="signup_step_form">2. 정보 입력</button>
+        <button type="button" class="signup-step is-active" data-step="3" aria-selected="true" disabled data-i18n-key="signup_step_complete">3. 완료</button>
+      </div>
+
+      <section class="signup-complete" aria-live="polite">
+        <p class="signup-complete__message" data-i18n-key="signup_success_message">입력하신 이메일로 인증 메일을 전송했습니다. 메일 인증 후 서비스를 이용하실 수 있습니다.</p>
+        <div class="signup-complete__preview" id="signup-success-preview" hidden></div>
+        <p class="signup-complete__empty" id="signup-success-empty" hidden data-i18n-key="signup_success_empty">전달된 신청 정보가 없습니다. 다시 회원가입을 진행해주세요.</p>
+        <div class="signup-complete__actions">
+          <a class="btn ghost" href="signup.html" data-i18n-key="signup_success_retry">정보 다시 입력하기</a>
+          <a class="btn primary" href="index.html" data-i18n-key="signup_success_home">메인으로 돌아가기</a>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script src="scripts/signupCopy.js" defer></script>
+  <script src="scripts/i18n.js" defer></script>
+  <script src="scripts/signupSuccess.js" defer></script>
+</body>
+</html>
