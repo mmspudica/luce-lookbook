@@ -159,52 +159,55 @@ document.addEventListener('DOMContentLoaded', async () => {
     let latestCreatedAt = null;
 
     try {
-      const { data, error } = await supabaseClient
-        .from('profiles')
-        .select('user_type, count:id', { head: false })
-        .group('user_type');
+      const pageSize = 1000;
+      let from = 0;
+      let hasMore = true;
+      let latestTimestamp = null;
+      let latestValue = null;
 
-      if (error) {
-        throw error;
-      }
+      while (hasMore) {
+        const { data, error } = await supabaseClient
+          .from('profiles')
+          .select('user_type, created_at', { count: 'exact' })
+          .order('created_at', { ascending: false })
+          .range(from, from + pageSize - 1);
 
-      if (Array.isArray(data)) {
+        if (error) {
+          throw error;
+        }
+
+        if (!Array.isArray(data) || data.length === 0) {
+          hasMore = false;
+          continue;
+        }
+
         data.forEach(entry => {
-          const value = typeof entry.count === 'number' ? entry.count : parseInt(entry.count, 10);
+          const normalizedType = normalizeUserType(entry?.user_type);
+          nextCounts[normalizedType] = (nextCounts[normalizedType] || 0) + 1;
 
-          if (!Number.isFinite(value)) {
-            return;
+          const createdAtRaw = entry?.created_at;
+          if (createdAtRaw) {
+            const createdAtDate = new Date(createdAtRaw);
+            const createdAtTime = createdAtDate.getTime();
+
+            if (!Number.isNaN(createdAtTime) && (latestTimestamp === null || createdAtTime > latestTimestamp)) {
+              latestTimestamp = createdAtTime;
+              latestValue = createdAtRaw;
+            }
           }
-
-          const normalizedType = normalizeUserType(entry.user_type);
-          nextCounts[normalizedType] = (nextCounts[normalizedType] || 0) + value;
         });
-      }
-    } catch (error) {
-      encounteredError = true;
-      console.error('Failed to load profile counts', error);
-    }
 
-    try {
-      const { data: latestData, error: latestError } = await supabaseClient
-        .from('profiles')
-        .select('created_at')
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      if (latestError) {
-        throw latestError;
-      }
-
-      if (Array.isArray(latestData) && latestData.length > 0) {
-        const [first] = latestData;
-        if (first?.created_at) {
-          latestCreatedAt = first.created_at;
+        if (data.length < pageSize) {
+          hasMore = false;
+        } else {
+          from += pageSize;
         }
       }
+
+      latestCreatedAt = latestValue;
     } catch (error) {
       encounteredError = true;
-      console.error('Failed to load latest profile timestamp', error);
+      console.error('Failed to load profile metrics', error);
     }
 
     cachedCounts = nextCounts;
