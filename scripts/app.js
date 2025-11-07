@@ -94,20 +94,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  function normalizeUserType(type) {
-    if (typeof type === 'string') {
-      const normalized = type.trim().toLowerCase();
-      if (normalized === 'supplier' || normalized === 'seller') {
-        return normalized;
-      }
-      if (normalized === 'member') {
-        return 'member';
-      }
-    }
-
-    return 'member';
-  }
-
   function updateMetrics(counts = cachedCounts, latestCreatedAt = cachedLatestCreatedAt, hasError = lastMetricsError) {
     if (metricProducts) {
       metricProducts.textContent = allData.length;
@@ -158,49 +144,71 @@ document.addEventListener('DOMContentLoaded', async () => {
     const nextCounts = { ...defaultCounts };
     let latestCreatedAt = null;
 
-    try {
-      const pageSize = 1000;
-      let from = 0;
-      let hasMore = true;
-      let latestTimestamp = null;
-      let latestValue = null;
+    const supplierPattern = 'supplier%';
+    const sellerPattern = 'seller%';
 
-      while (hasMore) {
-        const { data, error } = await supabaseClient
-          .from('profiles')
-          .select('user_type, created_at', { count: 'exact' })
-          .order('created_at', { ascending: false })
-          .range(from, from + pageSize - 1);
+    async function countProfiles(applyFilter) {
+      let query = supabaseClient.from('profiles');
+      if (typeof applyFilter === 'function') {
+        query = applyFilter(query);
+      }
 
-        if (error) {
-          throw error;
-        }
+      const { count, error } = await query.select('id', { count: 'exact', head: true });
 
         if (!Array.isArray(data) || data.length === 0) {
           hasMore = false;
           continue;
         }
 
-        data.forEach(entry => {
-          const normalizedType = normalizeUserType(entry?.user_type);
-          nextCounts[normalizedType] = (nextCounts[normalizedType] || 0) + 1;
+      return typeof count === 'number' && Number.isFinite(count) ? count : 0;
+    }
 
-          const createdAtRaw = entry?.created_at;
-          if (createdAtRaw) {
-            const createdAtDate = new Date(createdAtRaw);
-            const createdAtTime = createdAtDate.getTime();
+    try {
+      const countResults = await Promise.allSettled([
+        countProfiles(),
+        countProfiles(query => query.ilike('user_type', supplierPattern)),
+        countProfiles(query => query.ilike('user_type', sellerPattern))
+      ]);
 
-            if (!Number.isNaN(createdAtTime) && (latestTimestamp === null || createdAtTime > latestTimestamp)) {
-              latestTimestamp = createdAtTime;
-              latestValue = createdAtRaw;
-            }
-          }
-        });
+      const [totalResult, supplierResult, sellerResult] = countResults;
 
-        if (data.length < pageSize) {
-          hasMore = false;
-        } else {
-          from += pageSize;
+      if (totalResult.status === 'fulfilled') {
+        const total = totalResult.value;
+        const supplierCount = supplierResult.status === 'fulfilled' ? supplierResult.value : 0;
+        const sellerCount = sellerResult.status === 'fulfilled' ? sellerResult.value : 0;
+
+        nextCounts.supplier = supplierCount;
+        nextCounts.seller = sellerCount;
+
+        const inferredMembers = total - supplierCount - sellerCount;
+        nextCounts.member = inferredMembers > 0 ? inferredMembers : 0;
+      } else {
+        encounteredError = true;
+      }
+
+      if (supplierResult.status === 'rejected' || sellerResult.status === 'rejected') {
+        encounteredError = true;
+      }
+    } catch (error) {
+      encounteredError = true;
+      console.error('Failed to load profile counts', error);
+    }
+
+    try {
+      const { data, error } = await supabaseClient
+        .from('profiles')
+        .select('created_at')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (error) {
+        throw error;
+      }
+
+      if (Array.isArray(data) && data.length > 0) {
+        const first = data[0];
+        if (first?.created_at) {
+          latestCreatedAt = first.created_at;
         }
       }
 
