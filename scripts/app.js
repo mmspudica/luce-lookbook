@@ -6,6 +6,15 @@ const localeMap = {
   zh: 'zh-CN'
 };
 
+const platformLabelMap = {
+  youtube: 'YouTube',
+  tiktok: 'TikTok',
+  instagram: 'Instagram',
+  grab: 'Grab',
+  clickmate: 'Clickmate',
+  other: 'Other'
+};
+
 document.addEventListener('DOMContentLoaded', async () => {
   const grid = document.getElementById('lookbook-grid');
   const metricProducts = document.getElementById('metric-products');
