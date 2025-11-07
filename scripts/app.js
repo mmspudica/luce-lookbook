@@ -94,20 +94,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  function normalizeUserType(type) {
-    if (typeof type === 'string') {
-      const normalized = type.trim().toLowerCase();
-      if (normalized === 'supplier' || normalized === 'seller') {
-        return normalized;
-      }
-      if (normalized === 'member') {
-        return 'member';
-      }
-    }
-
-    return 'member';
-  }
-
   function updateMetrics(counts = cachedCounts, latestCreatedAt = cachedLatestCreatedAt, hasError = lastMetricsError) {
     if (metricProducts) {
       metricProducts.textContent = allData.length;
@@ -158,27 +144,49 @@ document.addEventListener('DOMContentLoaded', async () => {
     const nextCounts = { ...defaultCounts };
     let latestCreatedAt = null;
 
-    try {
-      const { data, error } = await supabaseClient
-        .from('profiles')
-        .select('user_type, count:id', { head: false })
-        .group('user_type');
+    const supplierPattern = 'supplier%';
+    const sellerPattern = 'seller%';
+
+    async function countProfiles(applyFilter) {
+      let query = supabaseClient.from('profiles');
+      if (typeof applyFilter === 'function') {
+        query = applyFilter(query);
+      }
+
+      const { count, error } = await query.select('id', { count: 'exact', head: true });
 
       if (error) {
         throw error;
       }
 
-      if (Array.isArray(data)) {
-        data.forEach(entry => {
-          const value = typeof entry.count === 'number' ? entry.count : parseInt(entry.count, 10);
+      return typeof count === 'number' && Number.isFinite(count) ? count : 0;
+    }
 
-          if (!Number.isFinite(value)) {
-            return;
-          }
+    try {
+      const countResults = await Promise.allSettled([
+        countProfiles(),
+        countProfiles(query => query.ilike('user_type', supplierPattern)),
+        countProfiles(query => query.ilike('user_type', sellerPattern))
+      ]);
 
-          const normalizedType = normalizeUserType(entry.user_type);
-          nextCounts[normalizedType] = (nextCounts[normalizedType] || 0) + value;
-        });
+      const [totalResult, supplierResult, sellerResult] = countResults;
+
+      if (totalResult.status === 'fulfilled') {
+        const total = totalResult.value;
+        const supplierCount = supplierResult.status === 'fulfilled' ? supplierResult.value : 0;
+        const sellerCount = sellerResult.status === 'fulfilled' ? sellerResult.value : 0;
+
+        nextCounts.supplier = supplierCount;
+        nextCounts.seller = sellerCount;
+
+        const inferredMembers = total - supplierCount - sellerCount;
+        nextCounts.member = inferredMembers > 0 ? inferredMembers : 0;
+      } else {
+        encounteredError = true;
+      }
+
+      if (supplierResult.status === 'rejected' || sellerResult.status === 'rejected') {
+        encounteredError = true;
       }
     } catch (error) {
       encounteredError = true;
@@ -186,18 +194,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     try {
-      const { data: latestData, error: latestError } = await supabaseClient
+      const { data, error } = await supabaseClient
         .from('profiles')
         .select('created_at')
         .order('created_at', { ascending: false })
         .limit(1);
 
-      if (latestError) {
-        throw latestError;
+      if (error) {
+        throw error;
       }
 
-      if (Array.isArray(latestData) && latestData.length > 0) {
-        const [first] = latestData;
+      if (Array.isArray(data) && data.length > 0) {
+        const first = data[0];
         if (first?.created_at) {
           latestCreatedAt = first.created_at;
         }
