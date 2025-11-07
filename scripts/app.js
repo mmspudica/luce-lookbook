@@ -1,21 +1,76 @@
-/* * LUCE Lookbook Platform 메인 스크립트 (app.js)
- * 1. 룩북 그리드와 필터 기능 구현 (demo-data.js)
- * 2. 다국어(i18n) 기능 구현 (locales/*.json)
- */
+const supabaseClient = window.supabaseClient;
 
-// DOMContentLoaded 이벤트 리스너를 async로 설정하여 await setLanguage 사용
+const dynamicCopy = {
+  ko: {
+    loading: '가입 정보를 불러오는 중입니다...',
+    empty: '등록된 가입 정보가 없습니다.',
+    error: '가입 정보를 불러오지 못했습니다.',
+    unavailable: '현재 가입 정보를 확인할 수 없습니다.',
+    userType: {
+      supplier: '공급업체',
+      seller: '셀러',
+      member: '일반회원'
+    },
+    marketing: {
+      yes: '동의',
+      no: '미동의'
+    }
+  },
+  en: {
+    loading: 'Loading signup data...',
+    empty: 'No signup records found.',
+    error: 'Failed to load signup data.',
+    unavailable: 'Signup data is currently unavailable.',
+    userType: {
+      supplier: 'Supplier',
+      seller: 'Seller',
+      member: 'Member'
+    },
+    marketing: {
+      yes: 'Opted-in',
+      no: 'Opted-out'
+    }
+  },
+  zh: {
+    loading: '正在加载会员注册信息……',
+    empty: '暂无注册信息。',
+    error: '无法加载注册信息。',
+    unavailable: '目前无法查看注册信息。',
+    userType: {
+      supplier: '供应商',
+      seller: '卖家',
+      member: '普通会员'
+    },
+    marketing: {
+      yes: '同意接收',
+      no: '不同意'
+    }
+  }
+};
+
+const localeMap = {
+  ko: 'ko-KR',
+  en: 'en-US',
+  zh: 'zh-CN'
+};
+
 document.addEventListener('DOMContentLoaded', async () => {
-  // --- 1. 전역 DOM 요소 캐싱 ---
   const grid = document.getElementById('lookbook-grid');
   const metricProducts = document.getElementById('metric-products');
+  const metricSuppliers = document.getElementById('metric-suppliers');
+  const metricSellers = document.getElementById('metric-sellers');
+  const metricMembers = document.getElementById('metric-members');
+  const metricUpdated = document.getElementById('metric-updated');
+  const metricError = document.getElementById('metric-error');
+  const signupStatusBody = document.getElementById('signup-status-body');
   const filterButtons = document.querySelectorAll('.filter-btn');
   const navLinks = document.querySelectorAll('.main-nav a[data-view-target]');
   const sections = document.querySelectorAll('[data-view-section]');
-  
-  // 다국어 기능에 필요한 요소
-  const langSwitcher = document.querySelector('.lang-switcher');
 
-  // --- 2. 데이터 및 그리드 로드 확인 ---
+  if (window.luceI18n?.init) {
+    await window.luceI18n.init({ root: document, langSwitcherSelector: '.lang-switcher' });
+  }
+
   if (!grid || !window.lookbookData) {
     console.error('룩북 그리드 또는 데이터를 찾을 수 없습니다.');
     if (grid) {
@@ -25,23 +80,65 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   const allData = window.lookbookData;
+  let cachedProfiles = [];
+  let lastRenderError = false;
+  let lastErrorKey = null;
 
-  // --- 3. [기존 기능] 룩북 그리드 렌더링 함수 ---
+  function getLang() {
+    return window.luceI18n?.getCurrentLanguage?.() || 'ko';
+  }
+
+  function translateDynamic(key) {
+    const lang = getLang();
+    return dynamicCopy[lang]?.[key] ?? dynamicCopy.ko[key] ?? key;
+  }
+
+  function userTypeLabel(type) {
+    const lang = getLang();
+    return dynamicCopy[lang]?.userType?.[type] ?? dynamicCopy.ko.userType[type] ?? type;
+  }
+
+  function marketingLabel(consent) {
+    const lang = getLang();
+    const key = consent ? 'yes' : 'no';
+    return dynamicCopy[lang]?.marketing?.[key] ?? dynamicCopy.ko.marketing[key];
+  }
+
+  function formatDate(value) {
+    if (!value) {
+      return '-';
+    }
+
+    try {
+      const lang = getLang();
+      const locale = localeMap[lang] || lang || undefined;
+      return new Date(value).toLocaleString(locale, {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit'
+      });
+    } catch (error) {
+      console.error('날짜 포맷 오류', error);
+      return '-';
+    }
+  }
+
   function renderGrid(items) {
+    if (!grid) return;
+
     if (items.length === 0) {
       grid.innerHTML = '<p>해당 카테고리의 룩이 없습니다.</p>';
       return;
     }
-    
-    grid.innerHTML = ''; // 그리드 비우기
+
+    grid.innerHTML = '';
     items.forEach(item => {
       const card = document.createElement('article');
       card.className = 'look-card';
-      card.dataset.id = item.id; 
-      
+      card.dataset.id = item.id;
       card.innerHTML = `
         <div class="look-card__image-wrapper">
-          <img src="${item.imageUrl}" alt="${item.title}" class="look-card__image" loading="lazy" 
+          <img src="${item.imageUrl}" alt="${item.title}" class="look-card__image" loading="lazy"
                onerror="this.src='https://placehold.co/600x800/EEE/333?text=Image+Not+Found'; this.classList.add('error');">
         </div>
         <div class="look-card__body">
@@ -51,74 +148,183 @@ document.addEventListener('DOMContentLoaded', async () => {
       `;
       grid.appendChild(card);
     });
-    // 참고: 룩북 아이템(item.title) 자체의 번역은
-    // demo-data.js의 구조를 바꾸거나 이 함수 내에서 번역을 조회해야 합니다.
-    // 현재는 index.html의 정적 텍스트만 번역됩니다.
   }
 
-  // --- 4. [기존 기능] 지표 업데이트 함수 ---
-  function updateMetrics() {
+  function updateMetricsFromProfiles(profiles = []) {
     if (metricProducts) {
       metricProducts.textContent = allData.length;
     }
-    // TODO: 다른 지표들 (공급업체, 셀러 등)
-    // const suppliers = new Set(allData.map(item => item.supplier));
-    // document.getElementById('metric-suppliers').textContent = suppliers.size;
+
+    const supplierCount = profiles.filter(profile => profile.user_type === 'supplier').length;
+    const sellerCount = profiles.filter(profile => profile.user_type === 'seller').length;
+    const memberCount = profiles.filter(profile => profile.user_type === 'member').length;
+
+    if (metricSuppliers) {
+      metricSuppliers.textContent = supplierCount;
+    }
+    if (metricSellers) {
+      metricSellers.textContent = sellerCount;
+    }
+    if (metricMembers) {
+      metricMembers.textContent = memberCount;
+    }
+    if (metricUpdated) {
+      const latest = profiles[0]?.created_at;
+      metricUpdated.textContent = formatDate(latest);
+    }
+
+    if (metricError) {
+      metricError.hidden = true;
+      metricError.setAttribute('hidden', '');
+    }
   }
 
-  // --- 5. [신규 기능] 번역 로드 및 적용 (i18n) ---
-  const setLanguage = async (lang) => {
-    const translations = await fetchTranslations(lang);
-    if (!translations) return; 
+  function renderSignupStatus(profiles = [], errorKey = null) {
+    if (!signupStatusBody) {
+      return;
+    }
 
-    document.querySelectorAll('[data-i18n-key]').forEach(element => {
-      const key = element.dataset.i18nKey;
-      const translation = translations[key];
-      
-      if (translation) {
-        if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
-          element.placeholder = translation;
+    signupStatusBody.innerHTML = '';
+
+    if (errorKey) {
+      const errorRow = document.createElement('tr');
+      const errorCell = document.createElement('td');
+      errorCell.colSpan = 7;
+      errorCell.textContent = translateDynamic(errorKey);
+      errorRow.appendChild(errorCell);
+      signupStatusBody.appendChild(errorRow);
+      return;
+    }
+
+    if (profiles.length === 0) {
+      const emptyRow = document.createElement('tr');
+      const emptyCell = document.createElement('td');
+      emptyCell.colSpan = 7;
+      emptyCell.textContent = translateDynamic('empty');
+      emptyRow.appendChild(emptyCell);
+      signupStatusBody.appendChild(emptyRow);
+      return;
+    }
+
+    profiles.forEach(profile => {
+      const profileRow = document.createElement('tr');
+
+      const nameCell = document.createElement('td');
+      nameCell.textContent = profile.full_name || '-';
+
+      const typeCell = document.createElement('td');
+      typeCell.textContent = userTypeLabel(profile.user_type);
+
+      const companyCell = document.createElement('td');
+      companyCell.textContent = profile.company_name || '-';
+
+      const platformCell = document.createElement('td');
+      const platforms = (profile.main_platforms || '')
+        .split(',')
+        .map(platform => platform.trim())
+        .filter(Boolean)
+        .join(', ');
+      platformCell.textContent = platforms || '-';
+
+      const channelCell = document.createElement('td');
+      const channelUrl = profile.channel_url?.trim();
+      if (channelUrl) {
+        if (/^https?:\/\//i.test(channelUrl)) {
+          const link = document.createElement('a');
+          link.href = channelUrl;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          link.textContent = channelUrl;
+          channelCell.appendChild(link);
         } else {
-          element.textContent = translation;
+          channelCell.textContent = channelUrl;
         }
+      } else {
+        channelCell.textContent = '-';
       }
+
+      const marketingCell = document.createElement('td');
+      marketingCell.textContent = marketingLabel(Boolean(profile.marketing_consent));
+
+      const createdCell = document.createElement('td');
+      createdCell.textContent = formatDate(profile.created_at);
+
+      profileRow.appendChild(nameCell);
+      profileRow.appendChild(typeCell);
+      profileRow.appendChild(companyCell);
+      profileRow.appendChild(platformCell);
+      profileRow.appendChild(channelCell);
+      profileRow.appendChild(marketingCell);
+      profileRow.appendChild(createdCell);
+
+      signupStatusBody.appendChild(profileRow);
     });
+  }
 
-    document.documentElement.lang = lang;
-
-    if (langSwitcher) {
-      langSwitcher.querySelectorAll('button').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.lang === lang);
-      });
+  async function fetchProfiles() {
+    if (!signupStatusBody) {
+      return;
     }
-    
-    localStorage.setItem('luce-lang', lang);
-  };
 
-  // --- 6. [신규 기능] 번역 JSON 파일 가져오기 (i18n) ---
-  const fetchTranslations = async (lang) => {
-    try {
-      // locales/ko.json, locales/en.json ...
-      const response = await fetch(`locales/${lang}.json`); 
-      if (!response.ok) {
-        throw new Error(`Failed to load ${lang}.json`);
+    signupStatusBody.innerHTML = '';
+    const loadingRow = document.createElement('tr');
+    const loadingCell = document.createElement('td');
+    loadingCell.colSpan = 7;
+    loadingCell.textContent = translateDynamic('loading');
+    loadingRow.appendChild(loadingCell);
+    signupStatusBody.appendChild(loadingRow);
+
+    if (!supabaseClient) {
+      console.warn('Supabase client not available.');
+      cachedProfiles = [];
+      lastRenderError = true;
+      lastErrorKey = 'unavailable';
+      renderSignupStatus([], lastErrorKey);
+      updateMetricsFromProfiles([]);
+      if (metricError) {
+        metricError.hidden = false;
+        metricError.removeAttribute('hidden');
       }
-      return await response.json();
-    } catch (error) {
-      console.error(error);
-      // 기본 한국어 텍스트로 대체하거나 오류 메시지 표시
-      return null;
+      return;
     }
-  };
 
-  // --- 7. [기존 기능] 필터 버튼 이벤트 리스너 ---
+    try {
+      const { data, error } = await supabaseClient
+        .from('profile')
+        .select('id, user_type, full_name, company_name, main_platforms, channel_url, marketing_consent, created_at')
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) {
+        throw error;
+      }
+
+      cachedProfiles = Array.isArray(data) ? data : [];
+      lastRenderError = false;
+      lastErrorKey = null;
+      renderSignupStatus(cachedProfiles);
+      updateMetricsFromProfiles(cachedProfiles);
+    } catch (error) {
+      console.error('Failed to load signup profiles', error);
+      cachedProfiles = [];
+      lastRenderError = true;
+      lastErrorKey = 'error';
+      renderSignupStatus([], lastErrorKey);
+      updateMetricsFromProfiles([]);
+      if (metricError) {
+        metricError.hidden = false;
+        metricError.removeAttribute('hidden');
+      }
+    }
+  }
+
   filterButtons.forEach(button => {
     button.addEventListener('click', () => {
       filterButtons.forEach(btn => btn.classList.remove('active'));
       button.classList.add('active');
-      
+
       const filter = button.dataset.filter;
-      
+
       if (filter === 'all') {
         renderGrid(allData);
       } else {
@@ -128,18 +334,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  // --- 8. [기존 기능] 네비게이션 (SPA) 이벤트 리스너 ---
   navLinks.forEach(link => {
-    link.addEventListener('click', (e) => {
-      // 'admin.html'로 가는 링크는 기본 동작을 허용
+    link.addEventListener('click', (event) => {
       if (link.getAttribute('href') === 'admin.html' || link.getAttribute('href') === 'signup.html') {
-        return; 
+        return;
       }
-      
-      e.preventDefault();
+
+      event.preventDefault();
       const targetId = link.dataset.viewTarget;
       const targetSection = document.getElementById(targetId);
-      
+
       if (targetSection) {
         sections.forEach(section => section.setAttribute('aria-hidden', 'true'));
         targetSection.setAttribute('aria-hidden', 'false');
@@ -150,30 +354,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  // --- 9. [신규 기능] 언어 선택기 이벤트 리스너 (i18n) ---
-  if (langSwitcher) {
-    langSwitcher.addEventListener('click', (e) => {
-      if (e.target.tagName === 'BUTTON') {
-        const lang = e.target.dataset.lang;
-        if (lang) {
-          setLanguage(lang);
-        }
-      }
-    });
-  }
+  renderGrid(allData);
+  updateMetricsFromProfiles([]);
+  fetchProfiles();
 
-  // --- 10. 초기화 실행 ---
-  
-  // 10a. [신규] 언어 먼저 설정
-  const savedLang = localStorage.getItem('luce-lang') || 'ko';
-  await setLanguage(savedLang);
-
-  // 10b. [기존] 룩북 및 지표 렌더링
-  renderGrid(allData); 
-  updateMetrics(); 
-  
-  // 10c. [기존] 기본 섹션 표시
   document.getElementById('lookbook')?.setAttribute('aria-hidden', 'false');
   document.querySelector('.main-nav a[data-view-target="lookbook"]')?.classList.add('active');
 
+  document.addEventListener('luce:language-changed', () => {
+    if (lastRenderError) {
+      renderSignupStatus([], lastErrorKey || 'error');
+      updateMetricsFromProfiles([]);
+      if (metricError) {
+        metricError.hidden = false;
+        metricError.removeAttribute('hidden');
+      }
+      return;
+    }
+
+    renderSignupStatus(cachedProfiles);
+    updateMetricsFromProfiles(cachedProfiles);
+  });
 });
