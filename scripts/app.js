@@ -219,12 +219,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       companyCell.textContent = profile.company_name || '-';
 
       const platformCell = document.createElement('td');
-      const platforms = (profile.main_platforms || '')
-        .split(',')
-        .map(platform => platform.trim())
-        .filter(Boolean)
-        .join(', ');
-      platformCell.textContent = platforms || '-';
+      let platforms = '-';
+      if (Array.isArray(profile.main_platforms)) {
+        const normalized = profile.main_platforms.map(platform => platform?.trim()).filter(Boolean);
+        platforms = normalized.length ? normalized.join(', ') : '-';
+      } else if (typeof profile.main_platforms === 'string') {
+        platforms = profile.main_platforms
+          .split(',')
+          .map(platform => platform.trim())
+          .filter(Boolean)
+          .join(', ') || '-';
+      }
+      platformCell.textContent = platforms;
 
       const channelCell = document.createElement('td');
       const channelUrl = profile.channel_url?.trim();

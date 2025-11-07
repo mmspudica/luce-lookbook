@@ -8,7 +8,7 @@ const copy = {
     processing: '가입을 처리하고 있습니다. 잠시만 기다려주세요...',
     duplicateChannel: '이미 등록된 채널 URL입니다. 다른 URL을 입력해주세요.',
     platformRequired: '주요 판매 플랫폼을 최소 1개 이상 선택해주세요.',
-    signupSuccess: '가입이 완료되었습니다. 이메일 인증을 진행해주세요.',
+    signupSuccess: '가입이 완료되었습니다. 환영합니다!',
     signupError: '가입 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
     noSupabase: '시스템 설정에 문제가 있습니다. 잠시 후 다시 시도해주세요.',
     help_supplier: '공급업체는 회사/브랜드명과 사업자등록번호를 필수로 입력해야 합니다.',
@@ -37,7 +37,7 @@ const copy = {
     processing: 'Processing your registration. Please wait...',
     duplicateChannel: 'This channel URL is already registered. Please use a different one.',
     platformRequired: 'Select at least one primary platform.',
-    signupSuccess: 'Registration complete. Please verify your email.',
+    signupSuccess: 'Registration complete. Welcome aboard!',
     signupError: 'An error occurred while signing up. Please try again later.',
     noSupabase: 'Configuration error detected. Please try again soon.',
     help_supplier: 'Suppliers must provide a company/brand name and business registration number.',
@@ -66,7 +66,7 @@ const copy = {
     processing: '正在处理您的注册，请稍候……',
     duplicateChannel: '该频道 URL 已被注册，请输入其他地址。',
     platformRequired: '请至少选择一个主要销售平台。',
-    signupSuccess: '注册完成。请前往邮箱完成验证。',
+    signupSuccess: '注册完成，欢迎加入！',
     signupError: '注册过程中发生错误，请稍后再试。',
     noSupabase: '系统配置出现问题，请稍后再试。',
     help_supplier: '供应商需填写公司/品牌名称及营业执照号码。',
@@ -392,8 +392,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             full_name: payload.full_name,
             phone_number: payload.phone_number,
             company_name: payload.company_name
-          },
-          emailRedirectTo: `${window.location.origin}/index.html`
+          }
         }
       });
 
@@ -415,7 +414,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         marketing_consent: payload.marketing_consent,
         company_name: payload.company_name || null,
         business_registration_number: payload.business_registration_number || null,
-        main_platforms: payload.main_platforms.length ? payload.main_platforms.join(', ') : null,
+        main_platforms: payload.main_platforms.length ? payload.main_platforms : null,
         channel_url: payload.channel_url || null
       };
 
