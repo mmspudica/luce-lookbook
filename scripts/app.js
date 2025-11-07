@@ -1,53 +1,5 @@
 const supabaseClient = window.supabaseClient;
 
-const dynamicCopy = {
-  ko: {
-    loading: '가입 정보를 불러오는 중입니다...',
-    empty: '등록된 가입 정보가 없습니다.',
-    error: '가입 정보를 불러오지 못했습니다.',
-    unavailable: '현재 가입 정보를 확인할 수 없습니다.',
-    userType: {
-      supplier: '공급업체',
-      seller: '셀러',
-      member: '일반회원'
-    },
-    marketing: {
-      yes: '동의',
-      no: '미동의'
-    }
-  },
-  en: {
-    loading: 'Loading signup data...',
-    empty: 'No signup records found.',
-    error: 'Failed to load signup data.',
-    unavailable: 'Signup data is currently unavailable.',
-    userType: {
-      supplier: 'Supplier',
-      seller: 'Seller',
-      member: 'Member'
-    },
-    marketing: {
-      yes: 'Opted-in',
-      no: 'Opted-out'
-    }
-  },
-  zh: {
-    loading: '正在加载会员注册信息……',
-    empty: '暂无注册信息。',
-    error: '无法加载注册信息。',
-    unavailable: '目前无法查看注册信息。',
-    userType: {
-      supplier: '供应商',
-      seller: '卖家',
-      member: '普通会员'
-    },
-    marketing: {
-      yes: '同意接收',
-      no: '不同意'
-    }
-  }
-};
-
 const localeMap = {
   ko: 'ko-KR',
   en: 'en-US',
@@ -71,7 +23,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const metricMembers = document.getElementById('metric-members');
   const metricUpdated = document.getElementById('metric-updated');
   const metricError = document.getElementById('metric-error');
-  const signupStatusBody = document.getElementById('signup-status-body');
   const filterButtons = document.querySelectorAll('.filter-btn');
   const navLinks = document.querySelectorAll('.main-nav a[data-view-target]');
   const sections = document.querySelectorAll('[data-view-section]');
@@ -89,38 +40,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   const allData = window.lookbookData;
-  let cachedProfiles = [];
   let cachedCounts = { supplier: 0, seller: 0, member: 0 };
-  let lastRenderError = false;
-  let lastErrorKey = null;
+  let cachedLatestCreatedAt = null;
+  let lastMetricsError = false;
 
   function getLang() {
     return window.luceI18n?.getCurrentLanguage?.() || 'ko';
-  }
-
-  function translateDynamic(key) {
-    const lang = getLang();
-    return dynamicCopy[lang]?.[key] ?? dynamicCopy.ko[key] ?? key;
-  }
-
-  function userTypeLabel(type) {
-    const lang = getLang();
-    return dynamicCopy[lang]?.userType?.[type] ?? dynamicCopy.ko.userType[type] ?? type;
-  }
-
-  function marketingLabel(consent) {
-    const lang = getLang();
-    const key = consent ? 'yes' : 'no';
-    return dynamicCopy[lang]?.marketing?.[key] ?? dynamicCopy.ko.marketing[key];
-  }
-
-  function formatPlatformLabel(value) {
-    if (!value) {
-      return '';
-    }
-
-    const normalized = value.toString().trim().toLowerCase();
-    return platformLabelMap[normalized] || value;
   }
 
   function formatDate(value) {
@@ -169,12 +94,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  function updateMetricsFromProfiles(profiles = [], counts = null) {
+  function normalizeUserType(type) {
+    if (typeof type === 'string') {
+      const normalized = type.trim().toLowerCase();
+      if (normalized === 'supplier' || normalized === 'seller') {
+        return normalized;
+      }
+      if (normalized === 'member') {
+        return 'member';
+      }
+    }
+
+    return 'member';
+  }
+
+  function updateMetrics(counts = cachedCounts, latestCreatedAt = cachedLatestCreatedAt, hasError = lastMetricsError) {
     if (metricProducts) {
       metricProducts.textContent = allData.length;
     }
 
-    const activeCounts = counts || cachedCounts || { supplier: 0, seller: 0, member: 0 };
+    const activeCounts = counts || { supplier: 0, seller: 0, member: 0 };
     const supplierCount = Number.isFinite(activeCounts.supplier) ? activeCounts.supplier : 0;
     const sellerCount = Number.isFinite(activeCounts.seller) ? activeCounts.seller : 0;
     const memberCount = Number.isFinite(activeCounts.member) ? activeCounts.member : 0;
@@ -189,214 +128,89 @@ document.addEventListener('DOMContentLoaded', async () => {
       metricMembers.textContent = memberCount;
     }
     if (metricUpdated) {
-      const latest = profiles[0]?.created_at;
-      metricUpdated.textContent = latest ? formatDate(latest) : '-';
+      metricUpdated.textContent = latestCreatedAt ? formatDate(latestCreatedAt) : '-';
     }
 
     if (metricError) {
-      metricError.hidden = true;
-      metricError.setAttribute('hidden', '');
-    }
-  }
-
-  function renderSignupStatus(profiles = [], errorKey = null) {
-    if (!signupStatusBody) {
-      return;
-    }
-
-    signupStatusBody.innerHTML = '';
-
-    if (errorKey) {
-      const errorRow = document.createElement('tr');
-      const errorCell = document.createElement('td');
-      errorCell.colSpan = 7;
-      errorCell.textContent = translateDynamic(errorKey);
-      errorRow.appendChild(errorCell);
-      signupStatusBody.appendChild(errorRow);
-      return;
-    }
-
-    if (profiles.length === 0) {
-      const emptyRow = document.createElement('tr');
-      const emptyCell = document.createElement('td');
-      emptyCell.colSpan = 7;
-      emptyCell.textContent = translateDynamic('empty');
-      emptyRow.appendChild(emptyCell);
-      signupStatusBody.appendChild(emptyRow);
-      return;
-    }
-
-    profiles.forEach(profile => {
-      const profileRow = document.createElement('tr');
-
-      const nameCell = document.createElement('td');
-      nameCell.textContent = profile.full_name || '-';
-
-      const typeCell = document.createElement('td');
-      typeCell.textContent = userTypeLabel(profile.user_type);
-
-      const companyCell = document.createElement('td');
-      companyCell.textContent = profile.company_name || '-';
-
-      const platformCell = document.createElement('td');
-      let platforms = '-';
-      if (Array.isArray(profile.main_platforms)) {
-        const normalized = profile.main_platforms
-          .map(platform => formatPlatformLabel(platform))
-          .filter(value => value && value.trim().length > 0);
-        platforms = normalized.length ? normalized.join(', ') : '-';
-      } else if (typeof profile.main_platforms === 'string') {
-        platforms = profile.main_platforms
-          .split(',')
-          .map(platform => formatPlatformLabel(platform.trim()))
-          .filter(Boolean)
-          .join(', ') || '-';
-      }
-      platformCell.textContent = platforms;
-
-      const channelCell = document.createElement('td');
-      const channelUrl = profile.channel_url?.trim();
-      if (channelUrl) {
-        if (/^https?:\/\//i.test(channelUrl)) {
-          const link = document.createElement('a');
-          link.href = channelUrl;
-          link.target = '_blank';
-          link.rel = 'noopener noreferrer';
-          link.textContent = channelUrl;
-          channelCell.appendChild(link);
-        } else {
-          channelCell.textContent = channelUrl;
-        }
+      if (hasError) {
+        metricError.hidden = false;
+        metricError.removeAttribute('hidden');
       } else {
-        channelCell.textContent = '-';
+        metricError.hidden = true;
+        metricError.setAttribute('hidden', '');
       }
-
-      const marketingCell = document.createElement('td');
-      marketingCell.textContent = marketingLabel(Boolean(profile.marketing_consent));
-
-      const createdCell = document.createElement('td');
-      createdCell.textContent = formatDate(profile.created_at);
-
-      profileRow.appendChild(nameCell);
-      profileRow.appendChild(typeCell);
-      profileRow.appendChild(companyCell);
-      profileRow.appendChild(platformCell);
-      profileRow.appendChild(channelCell);
-      profileRow.appendChild(marketingCell);
-      profileRow.appendChild(createdCell);
-
-      signupStatusBody.appendChild(profileRow);
-    });
+    }
   }
 
-  async function fetchProfileCounts() {
+  async function fetchProfileMetrics() {
     const defaultCounts = { supplier: 0, seller: 0, member: 0 };
 
     if (!supabaseClient) {
-      return defaultCounts;
-    }
-
-    const { data, error } = await supabaseClient
-      .from('profiles')
-      .select('user_type, count:id', { head: false })
-      .group('user_type');
-
-    if (error) {
-      throw error;
-    }
-
-    const counts = { ...defaultCounts };
-
-    if (Array.isArray(data)) {
-      data.forEach(entry => {
-        const type = entry.user_type;
-        const value = typeof entry.count === 'number' ? entry.count : parseInt(entry.count, 10);
-        if (Object.prototype.hasOwnProperty.call(counts, type) && Number.isFinite(value)) {
-          counts[type] = value;
-        }
-      });
-    }
-
-    return counts;
-  }
-
-  async function fetchProfiles() {
-    if (!signupStatusBody) {
-      return;
-    }
-
-    signupStatusBody.innerHTML = '';
-    const loadingRow = document.createElement('tr');
-    const loadingCell = document.createElement('td');
-    loadingCell.colSpan = 7;
-    loadingCell.textContent = translateDynamic('loading');
-    loadingRow.appendChild(loadingCell);
-    signupStatusBody.appendChild(loadingRow);
-
-    if (!supabaseClient) {
       console.warn('Supabase client not available.');
-      cachedProfiles = [];
-      lastRenderError = true;
-      lastErrorKey = 'unavailable';
-      renderSignupStatus([], lastErrorKey);
-      updateMetricsFromProfiles([]);
-      if (metricError) {
-        metricError.hidden = false;
-        metricError.removeAttribute('hidden');
-      }
+      cachedCounts = defaultCounts;
+      cachedLatestCreatedAt = null;
+      lastMetricsError = true;
+      updateMetrics();
       return;
     }
+
+    let encounteredError = false;
+    const nextCounts = { ...defaultCounts };
+    let latestCreatedAt = null;
 
     try {
       const { data, error } = await supabaseClient
         .from('profiles')
-        .select('id, user_type, full_name, company_name, main_platforms, channel_url, marketing_consent, created_at')
-        .order('created_at', { ascending: false })
-        .limit(50);
+        .select('user_type, count:id', { head: false })
+        .group('user_type');
 
       if (error) {
         throw error;
       }
 
-      cachedProfiles = Array.isArray(data)
-        ? data.map(profile => ({
-          ...profile,
-          marketing_consent: profile.marketing_consent === true
-        }))
-        : [];
-      lastRenderError = false;
-      lastErrorKey = null;
-      let counts = null;
-      let countsFailed = false;
+      if (Array.isArray(data)) {
+        data.forEach(entry => {
+          const value = typeof entry.count === 'number' ? entry.count : parseInt(entry.count, 10);
 
-      try {
-        counts = await fetchProfileCounts();
-        cachedCounts = counts;
-      } catch (countError) {
-        console.error('Failed to load profile counts', countError);
-        countsFailed = true;
-        counts = cachedCounts;
-      }
+          if (!Number.isFinite(value)) {
+            return;
+          }
 
-      renderSignupStatus(cachedProfiles);
-      updateMetricsFromProfiles(cachedProfiles, counts);
-
-      if (countsFailed && metricError) {
-        metricError.hidden = false;
-        metricError.removeAttribute('hidden');
+          const normalizedType = normalizeUserType(entry.user_type);
+          nextCounts[normalizedType] = (nextCounts[normalizedType] || 0) + value;
+        });
       }
     } catch (error) {
-      console.error('Failed to load signup profiles', error);
-      cachedProfiles = [];
-      lastRenderError = true;
-      lastErrorKey = 'error';
-      renderSignupStatus([], lastErrorKey);
-      updateMetricsFromProfiles([]);
-      if (metricError) {
-        metricError.hidden = false;
-        metricError.removeAttribute('hidden');
-      }
+      encounteredError = true;
+      console.error('Failed to load profile counts', error);
     }
+
+    try {
+      const { data: latestData, error: latestError } = await supabaseClient
+        .from('profiles')
+        .select('created_at')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (latestError) {
+        throw latestError;
+      }
+
+      if (Array.isArray(latestData) && latestData.length > 0) {
+        const [first] = latestData;
+        if (first?.created_at) {
+          latestCreatedAt = first.created_at;
+        }
+      }
+    } catch (error) {
+      encounteredError = true;
+      console.error('Failed to load latest profile timestamp', error);
+    }
+
+    cachedCounts = nextCounts;
+    cachedLatestCreatedAt = latestCreatedAt;
+    lastMetricsError = encounteredError;
+    updateMetrics();
   }
 
   filterButtons.forEach(button => {
@@ -436,24 +250,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   renderGrid(allData);
-  updateMetricsFromProfiles([], cachedCounts);
-  fetchProfiles();
+  updateMetrics();
+  fetchProfileMetrics();
 
   document.getElementById('lookbook')?.setAttribute('aria-hidden', 'false');
   document.querySelector('.main-nav a[data-view-target="lookbook"]')?.classList.add('active');
 
   document.addEventListener('luce:language-changed', () => {
-    if (lastRenderError) {
-      renderSignupStatus([], lastErrorKey || 'error');
-      updateMetricsFromProfiles([], cachedCounts);
-      if (metricError) {
-        metricError.hidden = false;
-        metricError.removeAttribute('hidden');
-      }
-      return;
-    }
-
-    renderSignupStatus(cachedProfiles);
-    updateMetricsFromProfiles(cachedProfiles, cachedCounts);
+    updateMetrics();
   });
 });
