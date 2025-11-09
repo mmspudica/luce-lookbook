@@ -144,26 +144,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     const nextCounts = { ...defaultCounts };
     let latestCreatedAt = null;
 
+    const normalizeType = (value) => {
+      if (!value) {
+        return '';
+      }
+
+      return value
+        .toString()
+        .trim()
+        .toLowerCase()
+        .replace(/[\s_-]+/g, '');
+    };
+
     try {
-      const [
-        { count: totalCount, error: totalError },
-        { count: supplierCount, error: supplierError },
-        { count: sellerCount, error: sellerError },
-        { count: memberCount, error: memberError },
-        { data: latestRows, error: latestError }
-      ] = await Promise.all([
-        supabaseClient
-          .from('profiles')
-          .select('*', { count: 'exact', head: true }),
-        supabaseClient
-          .from('profiles')
-          .select('*', { count: 'exact', head: true })
-          .ilike('user_type', 'supplier%'),
-        supabaseClient
-          .from('profiles')
-          .select('*', { count: 'exact', head: true })
-          .ilike('user_type', 'seller%'),
-        supabaseClient
+      const pageSize = 1000;
+      let rangeStart = 0;
+      let moreRowsAvailable = true;
+      let totalCount = null;
+      const rows = [];
+
+      while (moreRowsAvailable) {
+        const { data, error, count } = await supabaseClient
           .from('profiles')
           .select('*', { count: 'exact', head: true })
           .ilike('user_type', 'member%'),
@@ -171,29 +172,69 @@ document.addEventListener('DOMContentLoaded', async () => {
           .from('profiles')
           .select('created_at')
           .order('created_at', { ascending: false })
-          .limit(1)
-      ]);
+          .range(rangeStart, rangeStart + pageSize - 1);
 
-      if (totalError || supplierError || sellerError || memberError || latestError) {
-        throw totalError || supplierError || sellerError || memberError || latestError;
+        if (error) {
+          throw error;
+        }
+
+        if (typeof count === 'number' && count >= 0) {
+          totalCount = count;
+        }
+
+        if (Array.isArray(data)) {
+          rows.push(...data);
+          moreRowsAvailable = data.length === pageSize;
+        } else {
+          moreRowsAvailable = false;
+        }
+
+        rangeStart += pageSize;
       }
 
-      const safeSupplier = Number.isFinite(supplierCount) ? supplierCount : 0;
-      const safeSeller = Number.isFinite(sellerCount) ? sellerCount : 0;
-      const safeMemberDirect = Number.isFinite(memberCount) ? memberCount : 0;
-      const safeTotal = Number.isFinite(totalCount)
-        ? totalCount
-        : safeSupplier + safeSeller + safeMemberDirect;
-      const extraMembers = Math.max(safeTotal - safeSupplier - safeSeller - safeMemberDirect, 0);
-      const safeMember = safeMemberDirect + extraMembers;
+      rows.forEach((row, index) => {
+        if (!latestCreatedAt && index === 0 && row?.created_at) {
+          latestCreatedAt = row.created_at;
+        }
 
-      nextCounts.supplier = safeSupplier;
-      nextCounts.seller = safeSeller;
-      nextCounts.member = safeMember;
+        const normalizedType = normalizeType(row?.user_type);
 
-      if (Array.isArray(latestRows) && latestRows.length > 0 && latestRows[0]?.created_at) {
-        latestCreatedAt = latestRows[0].created_at;
+        if (normalizedType.startsWith('supplier')) {
+          nextCounts.supplier += 1;
+          return;
+        }
+
+        if (normalizedType.startsWith('seller')) {
+          nextCounts.seller += 1;
+          return;
+        }
+
+        if (normalizedType.startsWith('member')) {
+          nextCounts.member += 1;
+          return;
+        }
+
+        if (normalizedType.includes('seller')) {
+          nextCounts.seller += 1;
+          return;
+        }
+
+        nextCounts.member += 1;
+      });
+
+      const totalRowsCounted = nextCounts.supplier + nextCounts.seller + nextCounts.member;
+      const expectedTotal = Number.isFinite(totalCount) ? totalCount : rows.length;
+
+      if (expectedTotal > totalRowsCounted) {
+        nextCounts.member += expectedTotal - totalRowsCounted;
       }
+
+      console.debug('Fetched profile metrics', {
+        rowsFetched: rows.length,
+        counts: nextCounts,
+        expectedTotal,
+        latestCreatedAt
+      });
     } catch (error) {
       encounteredError = true;
       console.error('Failed to load profile metrics', error);
