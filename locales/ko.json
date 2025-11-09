@@ -92,11 +92,11 @@
   "metric_products": "등록된 룩",
   "metric_updated": "최근 업데이트",
   "metric_suppliers": "공급업체",
-  "metric_suppliers_caption": "라이브 준비 완료",
+  "metric_suppliers_caption": "제품 공급 중",
   "metric_sellers": "셀러 풀",
-  "metric_sellers_caption": "셀렉션 대기",
+  "metric_sellers_caption": "셀렉션 대기 중",
   "metric_members": "일반회원",
-  "metric_members_caption": "소식 구독",
+  "metric_members_caption": "소식 구독 중",
   "metric_error": "지표를 불러오지 못했습니다.",
   "lookbook_loader": "다음 룩을 불러오는 중...",
   "selection_title": "셀렉션 바구니",
@@ -136,6 +136,6 @@
   "checklist_card3_li3": "라이브 중 공지한 조건 그대로 적용",
   "checklist_card3_li4": "문서 기록 48시간 내 공유",
   "footer_subtitle": "동대문 라이브커머스를 위한 준비 도구. 고른다 → 준비한다 → 방송한다.",
-  "footer_contact": "문의: admin@luce.app · 010-9417-7871",
+  "footer_contact": "문의: admin@luce.app",
   "footer_copyright": "© 2025 DSY International. All rights reserved."
 }
