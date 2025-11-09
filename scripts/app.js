@@ -144,58 +144,93 @@ document.addEventListener('DOMContentLoaded', async () => {
     const nextCounts = { ...defaultCounts };
     let latestCreatedAt = null;
 
+    const normalizeType = (value) => {
+      if (!value) {
+        return '';
+      }
+
+      return value
+        .toString()
+        .trim()
+        .toLowerCase()
+        .replace(/[\s_-]+/g, '');
+    };
+
     try {
       const pageSize = 1000;
       let rangeStart = 0;
-      let hasMore = true;
+      let moreRowsAvailable = true;
+      let totalCount = null;
+      const rows = [];
 
-      while (hasMore) {
-        const rangeEnd = rangeStart + pageSize - 1;
+      while (moreRowsAvailable) {
         const { data, error, count } = await supabaseClient
           .from('profiles')
           .select('user_type, created_at', { count: 'exact' })
           .order('created_at', { ascending: false })
-          .range(rangeStart, rangeEnd);
+          .range(rangeStart, rangeStart + pageSize - 1);
 
         if (error) {
           throw error;
         }
 
-        if (Array.isArray(data)) {
-          data.forEach((profile) => {
-            const type = typeof profile?.user_type === 'string' ? profile.user_type.trim().toLowerCase() : '';
-            const isSupplier = type === 'supplier' || type.startsWith('supplier');
-            const isSeller = type === 'seller' || type.startsWith('seller');
-            const isMember = type === 'member' || type.startsWith('member');
-
-            if (isSupplier) {
-              nextCounts.supplier += 1;
-            } else if (isSeller) {
-              nextCounts.seller += 1;
-            } else if (isMember) {
-              nextCounts.member += 1;
-            } else {
-              nextCounts.member += 1;
-            }
-
-            if (!latestCreatedAt && profile?.created_at) {
-              latestCreatedAt = profile.created_at;
-            }
-          });
-
-          const received = data.length;
-          const total = typeof count === 'number' && Number.isFinite(count) ? count : null;
-          const fetchedSoFar = rangeStart + received;
-
-          if (received < pageSize || (total !== null && fetchedSoFar >= total)) {
-            hasMore = false;
-          } else {
-            rangeStart += pageSize;
-          }
-        } else {
-          hasMore = false;
+        if (typeof count === 'number' && count >= 0) {
+          totalCount = count;
         }
+
+        if (Array.isArray(data)) {
+          rows.push(...data);
+          moreRowsAvailable = data.length === pageSize;
+        } else {
+          moreRowsAvailable = false;
+        }
+
+        rangeStart += pageSize;
       }
+
+      rows.forEach((row, index) => {
+        if (!latestCreatedAt && index === 0 && row?.created_at) {
+          latestCreatedAt = row.created_at;
+        }
+
+        const normalizedType = normalizeType(row?.user_type);
+
+        if (normalizedType.startsWith('supplier')) {
+          nextCounts.supplier += 1;
+          return;
+        }
+
+        if (normalizedType.startsWith('seller')) {
+          nextCounts.seller += 1;
+          return;
+        }
+
+        if (normalizedType.startsWith('member')) {
+          nextCounts.member += 1;
+          return;
+        }
+
+        if (normalizedType.includes('seller')) {
+          nextCounts.seller += 1;
+          return;
+        }
+
+        nextCounts.member += 1;
+      });
+
+      const totalRowsCounted = nextCounts.supplier + nextCounts.seller + nextCounts.member;
+      const expectedTotal = Number.isFinite(totalCount) ? totalCount : rows.length;
+
+      if (expectedTotal > totalRowsCounted) {
+        nextCounts.member += expectedTotal - totalRowsCounted;
+      }
+
+      console.debug('Fetched profile metrics', {
+        rowsFetched: rows.length,
+        counts: nextCounts,
+        expectedTotal,
+        latestCreatedAt
+      });
     } catch (error) {
       encounteredError = true;
       console.error('Failed to load profile metrics', error);
