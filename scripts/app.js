@@ -145,56 +145,54 @@ document.addEventListener('DOMContentLoaded', async () => {
     let latestCreatedAt = null;
 
     try {
-      const pageSize = 1000;
-      let rangeStart = 0;
-      let hasMore = true;
-
-      while (hasMore) {
-        const rangeEnd = rangeStart + pageSize - 1;
-        const { data, error, count } = await supabaseClient
+      const [
+        { count: totalCount, error: totalError },
+        { count: supplierCount, error: supplierError },
+        { count: sellerCount, error: sellerError },
+        { count: memberCount, error: memberError },
+        { data: latestRows, error: latestError }
+      ] = await Promise.all([
+        supabaseClient
           .from('profiles')
-          .select('user_type, created_at', { count: 'exact' })
+          .select('*', { count: 'exact', head: true }),
+        supabaseClient
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .ilike('user_type', 'supplier%'),
+        supabaseClient
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .ilike('user_type', 'seller%'),
+        supabaseClient
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .ilike('user_type', 'member%'),
+        supabaseClient
+          .from('profiles')
+          .select('created_at')
           .order('created_at', { ascending: false })
-          .range(rangeStart, rangeEnd);
+          .limit(1)
+      ]);
 
-        if (error) {
-          throw error;
-        }
+      if (totalError || supplierError || sellerError || memberError || latestError) {
+        throw totalError || supplierError || sellerError || memberError || latestError;
+      }
 
-        if (Array.isArray(data)) {
-          data.forEach((profile) => {
-            const type = typeof profile?.user_type === 'string' ? profile.user_type.trim().toLowerCase() : '';
-            const isSupplier = type === 'supplier' || type.startsWith('supplier');
-            const isSeller = type === 'seller' || type.startsWith('seller');
-            const isMember = type === 'member' || type.startsWith('member');
+      const safeSupplier = Number.isFinite(supplierCount) ? supplierCount : 0;
+      const safeSeller = Number.isFinite(sellerCount) ? sellerCount : 0;
+      const safeMemberDirect = Number.isFinite(memberCount) ? memberCount : 0;
+      const safeTotal = Number.isFinite(totalCount)
+        ? totalCount
+        : safeSupplier + safeSeller + safeMemberDirect;
+      const extraMembers = Math.max(safeTotal - safeSupplier - safeSeller - safeMemberDirect, 0);
+      const safeMember = safeMemberDirect + extraMembers;
 
-            if (isSupplier) {
-              nextCounts.supplier += 1;
-            } else if (isSeller) {
-              nextCounts.seller += 1;
-            } else if (isMember) {
-              nextCounts.member += 1;
-            } else {
-              nextCounts.member += 1;
-            }
+      nextCounts.supplier = safeSupplier;
+      nextCounts.seller = safeSeller;
+      nextCounts.member = safeMember;
 
-            if (!latestCreatedAt && profile?.created_at) {
-              latestCreatedAt = profile.created_at;
-            }
-          });
-
-          const received = data.length;
-          const total = typeof count === 'number' && Number.isFinite(count) ? count : null;
-          const fetchedSoFar = rangeStart + received;
-
-          if (received < pageSize || (total !== null && fetchedSoFar >= total)) {
-            hasMore = false;
-          } else {
-            rangeStart += pageSize;
-          }
-        } else {
-          hasMore = false;
-        }
+      if (Array.isArray(latestRows) && latestRows.length > 0 && latestRows[0]?.created_at) {
+        latestCreatedAt = latestRows[0].created_at;
       }
     } catch (error) {
       encounteredError = true;
