@@ -145,31 +145,56 @@ document.addEventListener('DOMContentLoaded', async () => {
     let latestCreatedAt = null;
 
     try {
-      const { data, error } = await supabaseClient
-        .from('profiles')
-        .select('user_type, created_at')
-        .order('created_at', { ascending: false });
+      const pageSize = 1000;
+      let rangeStart = 0;
+      let hasMore = true;
 
-      if (error) {
-        throw error;
-      }
+      while (hasMore) {
+        const rangeEnd = rangeStart + pageSize - 1;
+        const { data, error, count } = await supabaseClient
+          .from('profiles')
+          .select('user_type, created_at', { count: 'exact' })
+          .order('created_at', { ascending: false })
+          .range(rangeStart, rangeEnd);
 
-      if (Array.isArray(data)) {
-        data.forEach(profile => {
-          const type = typeof profile?.user_type === 'string' ? profile.user_type.trim().toLowerCase() : '';
+        if (error) {
+          throw error;
+        }
 
-          if (type === 'supplier') {
-            nextCounts.supplier += 1;
-          } else if (type === 'seller') {
-            nextCounts.seller += 1;
-          } else if (type === 'member') {
-            nextCounts.member += 1;
+        if (Array.isArray(data)) {
+          data.forEach((profile) => {
+            const type = typeof profile?.user_type === 'string' ? profile.user_type.trim().toLowerCase() : '';
+            const isSupplier = type === 'supplier' || type.startsWith('supplier');
+            const isSeller = type === 'seller' || type.startsWith('seller');
+            const isMember = type === 'member' || type.startsWith('member');
+
+            if (isSupplier) {
+              nextCounts.supplier += 1;
+            } else if (isSeller) {
+              nextCounts.seller += 1;
+            } else if (isMember) {
+              nextCounts.member += 1;
+            } else {
+              nextCounts.member += 1;
+            }
+
+            if (!latestCreatedAt && profile?.created_at) {
+              latestCreatedAt = profile.created_at;
+            }
+          });
+
+          const received = data.length;
+          const total = typeof count === 'number' && Number.isFinite(count) ? count : null;
+          const fetchedSoFar = rangeStart + received;
+
+          if (received < pageSize || (total !== null && fetchedSoFar >= total)) {
+            hasMore = false;
+          } else {
+            rangeStart += pageSize;
           }
-
-          if (!latestCreatedAt && profile?.created_at) {
-            latestCreatedAt = profile.created_at;
-          }
-        });
+        } else {
+          hasMore = false;
+        }
       }
     } catch (error) {
       encounteredError = true;
