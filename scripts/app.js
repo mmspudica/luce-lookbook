@@ -144,75 +144,58 @@ document.addEventListener('DOMContentLoaded', async () => {
     const nextCounts = { ...defaultCounts };
     let latestCreatedAt = null;
 
-    const supplierPattern = 'supplier%';
-    const sellerPattern = 'seller%';
+    try {
+      const pageSize = 1000;
+      let rangeStart = 0;
+      let hasMore = true;
 
-    async function countProfiles(applyFilter) {
-      let query = supabaseClient.from('profiles');
-      if (typeof applyFilter === 'function') {
-        query = applyFilter(query);
-      }
+      while (hasMore) {
+        const rangeEnd = rangeStart + pageSize - 1;
+        const { data, error, count } = await supabaseClient
+          .from('profiles')
+          .select('user_type, created_at', { count: 'exact' })
+          .order('created_at', { ascending: false })
+          .range(rangeStart, rangeEnd);
 
-      const { count, error } = await query.select('id', { count: 'exact', head: true });
+        if (error) {
+          throw error;
+        }
 
-        if (!Array.isArray(data) || data.length === 0) {
+        if (Array.isArray(data)) {
+          data.forEach((profile) => {
+            const type = typeof profile?.user_type === 'string' ? profile.user_type.trim().toLowerCase() : '';
+            const isSupplier = type === 'supplier' || type.startsWith('supplier');
+            const isSeller = type === 'seller' || type.startsWith('seller');
+            const isMember = type === 'member' || type.startsWith('member');
+
+            if (isSupplier) {
+              nextCounts.supplier += 1;
+            } else if (isSeller) {
+              nextCounts.seller += 1;
+            } else if (isMember) {
+              nextCounts.member += 1;
+            } else {
+              nextCounts.member += 1;
+            }
+
+            if (!latestCreatedAt && profile?.created_at) {
+              latestCreatedAt = profile.created_at;
+            }
+          });
+
+          const received = data.length;
+          const total = typeof count === 'number' && Number.isFinite(count) ? count : null;
+          const fetchedSoFar = rangeStart + received;
+
+          if (received < pageSize || (total !== null && fetchedSoFar >= total)) {
+            hasMore = false;
+          } else {
+            rangeStart += pageSize;
+          }
+        } else {
           hasMore = false;
-          continue;
-        }
-
-      return typeof count === 'number' && Number.isFinite(count) ? count : 0;
-    }
-
-    try {
-      const countResults = await Promise.allSettled([
-        countProfiles(),
-        countProfiles(query => query.ilike('user_type', supplierPattern)),
-        countProfiles(query => query.ilike('user_type', sellerPattern))
-      ]);
-
-      const [totalResult, supplierResult, sellerResult] = countResults;
-
-      if (totalResult.status === 'fulfilled') {
-        const total = totalResult.value;
-        const supplierCount = supplierResult.status === 'fulfilled' ? supplierResult.value : 0;
-        const sellerCount = sellerResult.status === 'fulfilled' ? sellerResult.value : 0;
-
-        nextCounts.supplier = supplierCount;
-        nextCounts.seller = sellerCount;
-
-        const inferredMembers = total - supplierCount - sellerCount;
-        nextCounts.member = inferredMembers > 0 ? inferredMembers : 0;
-      } else {
-        encounteredError = true;
-      }
-
-      if (supplierResult.status === 'rejected' || sellerResult.status === 'rejected') {
-        encounteredError = true;
-      }
-    } catch (error) {
-      encounteredError = true;
-      console.error('Failed to load profile counts', error);
-    }
-
-    try {
-      const { data, error } = await supabaseClient
-        .from('profiles')
-        .select('created_at')
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      if (error) {
-        throw error;
-      }
-
-      if (Array.isArray(data) && data.length > 0) {
-        const first = data[0];
-        if (first?.created_at) {
-          latestCreatedAt = first.created_at;
         }
       }
-
-      latestCreatedAt = latestValue;
     } catch (error) {
       encounteredError = true;
       console.error('Failed to load profile metrics', error);
