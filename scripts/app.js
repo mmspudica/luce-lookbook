@@ -144,75 +144,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     const nextCounts = { ...defaultCounts };
     let latestCreatedAt = null;
 
-    const supplierPattern = 'supplier%';
-    const sellerPattern = 'seller%';
-
-    async function countProfiles(applyFilter) {
-      let query = supabaseClient.from('profiles');
-      if (typeof applyFilter === 'function') {
-        query = applyFilter(query);
-      }
-
-      const { count, error } = await query.select('id', { count: 'exact', head: true });
-
-        if (!Array.isArray(data) || data.length === 0) {
-          hasMore = false;
-          continue;
-        }
-
-      return typeof count === 'number' && Number.isFinite(count) ? count : 0;
-    }
-
-    try {
-      const countResults = await Promise.allSettled([
-        countProfiles(),
-        countProfiles(query => query.ilike('user_type', supplierPattern)),
-        countProfiles(query => query.ilike('user_type', sellerPattern))
-      ]);
-
-      const [totalResult, supplierResult, sellerResult] = countResults;
-
-      if (totalResult.status === 'fulfilled') {
-        const total = totalResult.value;
-        const supplierCount = supplierResult.status === 'fulfilled' ? supplierResult.value : 0;
-        const sellerCount = sellerResult.status === 'fulfilled' ? sellerResult.value : 0;
-
-        nextCounts.supplier = supplierCount;
-        nextCounts.seller = sellerCount;
-
-        const inferredMembers = total - supplierCount - sellerCount;
-        nextCounts.member = inferredMembers > 0 ? inferredMembers : 0;
-      } else {
-        encounteredError = true;
-      }
-
-      if (supplierResult.status === 'rejected' || sellerResult.status === 'rejected') {
-        encounteredError = true;
-      }
-    } catch (error) {
-      encounteredError = true;
-      console.error('Failed to load profile counts', error);
-    }
-
     try {
       const { data, error } = await supabaseClient
         .from('profiles')
-        .select('created_at')
-        .order('created_at', { ascending: false })
-        .limit(1);
+        .select('user_type, created_at')
+        .order('created_at', { ascending: false });
 
       if (error) {
         throw error;
       }
 
-      if (Array.isArray(data) && data.length > 0) {
-        const first = data[0];
-        if (first?.created_at) {
-          latestCreatedAt = first.created_at;
-        }
-      }
+      if (Array.isArray(data)) {
+        data.forEach(profile => {
+          const type = typeof profile?.user_type === 'string' ? profile.user_type.trim().toLowerCase() : '';
 
-      latestCreatedAt = latestValue;
+          if (type === 'supplier') {
+            nextCounts.supplier += 1;
+          } else if (type === 'seller') {
+            nextCounts.seller += 1;
+          } else if (type === 'member') {
+            nextCounts.member += 1;
+          }
+
+          if (!latestCreatedAt && profile?.created_at) {
+            latestCreatedAt = profile.created_at;
+          }
+        });
+      }
     } catch (error) {
       encounteredError = true;
       console.error('Failed to load profile metrics', error);
