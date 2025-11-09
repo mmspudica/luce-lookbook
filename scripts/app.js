@@ -166,7 +166,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       while (moreRowsAvailable) {
         const { data, error, count } = await supabaseClient
           .from('profiles')
-          .select('user_type, created_at', { count: 'exact' })
+          .select('*', { count: 'exact', head: true })
+          .ilike('user_type', 'member%'),
+        supabaseClient
+          .from('profiles')
+          .select('created_at')
           .order('created_at', { ascending: false })
           .range(rangeStart, rangeStart + pageSize - 1);
 
