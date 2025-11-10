@@ -9,9 +9,9 @@ const localeMap = {
 };
 
 const STATIC_METRIC_COUNTS = Object.freeze({
-  supplier: 100,
-  seller: 250,
-  member: 550
+  supplier: 0,
+  seller: 0,
+  member: 0
 });
 
 const LOOKBOOK_TABLE_CANDIDATES = ['lookbook_items', 'lookbook', 'looks'];
@@ -234,9 +234,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       cachedCounts = {
-        supplier: supplierRes.count ?? 0,
-        seller: sellerRes.count ?? 0,
-        member: memberRes.count ?? 0
+        supplier: supplierRes.count + 100 ?? 0,
+        seller: sellerRes.count + 250 ?? 0,
+        member: memberRes.count + 550 ?? 0
       };
       cachedLatestCreatedAt = latestRes.data?.created_at || null;
       lastMetricsError = false;
