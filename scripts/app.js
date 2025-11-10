@@ -180,20 +180,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         supabase
           .from('profiles')
           .select('*', { count: 'exact', head: true })
-          .eq('role', 'supplier'), // <-- [확인!] 'role' 컬럼명이 맞는지 확인
+          .eq('user_type', 'supplier'), // <-- [확인!] 'role' 컬럼명이 맞는지 확인
         
         // Seller 카운트 (role 컬럼이 'seller'인 경우)
         supabase
           .from('profiles')
           .select('*', { count: 'exact', head: true })
-          .eq('role', 'seller'), // <-- [확인!] 'role' 컬럼명이 맞는지 확인
+          .eq('user_type', 'seller'), // <-- [확인!] 'role' 컬럼명이 맞는지 확인
 
         // Member 카운트 (role 컬럼이 'member'인 경우)
         // (만약 'member'가 전체 회원을 의미한다면 .eq() 부분을 제거하세요)
         supabase
           .from('profiles')
           .select('*', { count: 'exact', head: true })
-          .eq('role', 'member'), // <-- [확인!] 'role' 컬럼명이 맞는지 확인
+          .eq('user_type', 'member'), // <-- [확인!] 'role' 컬럼명이 맞는지 확인
 
         // 가장 최근 생성된 프로필 조회 (업데이트 날짜 표시용)
         supabase
