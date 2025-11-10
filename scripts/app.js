@@ -9,9 +9,9 @@ const localeMap = {
 };
 
 const STATIC_METRIC_COUNTS = Object.freeze({
-  supplier: 0,
-  seller: 0,
-  member: 0
+  supplier: 100,
+  seller: 250,
+  member: 550
 });
 
 const LOOKBOOK_TABLE_CANDIDATES = ['lookbook_items', 'lookbook', 'looks'];
