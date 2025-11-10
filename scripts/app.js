@@ -1,5 +1,6 @@
-// 1. [추가] supabaseClient.js에서 supabase 객체 가져오기
-import { supabase } from './supabaseClient.js'; 
+// 1. Supabase 클라이언트를 초기화하는 스크립트를 로드합니다.
+//    (index.html에서 <script type="module" src="scripts/supabaseClient.js"></script> 로드)
+//    여기서는 전역(window.supabaseClient)에 주입된 클라이언트를 활용합니다.
 
 const localeMap = {
   ko: 'ko-KR',
@@ -165,6 +166,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 3. [교체] fetchProfileMetrics 함수를 Supabase 연동 버전으로 교체
   async function fetchProfileMetrics() {
+    const supabase = window.supabaseClient;
+
     // supabase 객체가 로드되었는지 확인
     if (!supabase) {
       console.error('Supabase client is not available.');
