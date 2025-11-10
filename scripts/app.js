@@ -5,9 +5,9 @@ const localeMap = {
 };
 
 const STATIC_METRIC_COUNTS = Object.freeze({
-  supplier: 107,
-  seller: 234,
-  member: 565
+  supplier: 111,
+  seller: 242,
+  member: 576
 });
 
 document.addEventListener('DOMContentLoaded', async () => {
