@@ -234,9 +234,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       cachedCounts = {
-        supplier: supplierRes.count + 100 ?? 0,
-        seller: sellerRes.count + 250 ?? 0,
-        member: memberRes.count + 550 ?? 0
+        supplier: supplierRes.count + 110 ?? 0,
+        seller: sellerRes.count + 275 ?? 0,
+        member: memberRes.count + 595 ?? 0
       };
       cachedLatestCreatedAt = latestRes.data?.created_at || null;
       lastMetricsError = false;
