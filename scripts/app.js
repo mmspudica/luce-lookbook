@@ -16,6 +16,46 @@ const STATIC_METRIC_COUNTS = Object.freeze({
 
 const LOOKBOOK_TABLE_CANDIDATES = ['lookbook_items', 'lookbook', 'looks'];
 
+// 📌 2025-11-15 기준으로 하루마다 증가시키는 메트릭 오프셋 설정
+const METRIC_BASE_DATE = new Date(2025, 10, 15); // 2025-11-15 (월은 0부터 시작)
+
+const METRIC_BASE_OFFSETS = {
+  supplier: 110,
+  seller: 275,
+  member: 595
+};
+
+const METRIC_DAILY_INCREMENTS = {
+  supplier: 2,  // 하루당 +2
+  seller: 3,    // 하루당 +3
+  member: 5     // 하루당 +5
+};
+
+function getDynamicMetricOffsets(referenceDate = new Date()) {
+  // 오늘 날짜 00:00
+  const todayStart = new Date(
+    referenceDate.getFullYear(),
+    referenceDate.getMonth(),
+    referenceDate.getDate()
+  );
+
+  // 기준일 00:00 (2025-11-15)
+  const baseStart = new Date(
+    METRIC_BASE_DATE.getFullYear(),
+    METRIC_BASE_DATE.getMonth(),
+    METRIC_BASE_DATE.getDate()
+  );
+
+  const diffMs = todayStart - baseStart;
+  const diffDays = Math.max(0, Math.floor(diffMs / 86400000)); // 하루(ms)
+
+  return {
+    supplier: METRIC_BASE_OFFSETS.supplier + diffDays * METRIC_DAILY_INCREMENTS.supplier,
+    seller:   METRIC_BASE_OFFSETS.seller   + diffDays * METRIC_DAILY_INCREMENTS.seller,
+    member:   METRIC_BASE_OFFSETS.member   + diffDays * METRIC_DAILY_INCREMENTS.member
+  };
+}
+
 async function resolveSupabaseClient(options = {}) {
   const { attempts = 5, delayMs = 150 } = options;
 
@@ -233,10 +273,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         throw new Error(errors.map(e => e.message).join(', '));
       }
 
+      // 📌 날짜 기반 동적 오프셋 적용
+      const dynamicOffsets = getDynamicMetricOffsets();
+
       cachedCounts = {
-        supplier: supplierRes.count + 110 ?? 0,
-        seller: sellerRes.count + 275 ?? 0,
-        member: memberRes.count + 595 ?? 0
+        supplier: (supplierRes.count ?? 0) + dynamicOffsets.supplier,
+        seller:   (sellerRes.count   ?? 0) + dynamicOffsets.seller,
+        member:   (memberRes.count   ?? 0) + dynamicOffsets.member
       };
       cachedLatestCreatedAt = latestRes.data?.created_at || null;
       lastMetricsError = false;
