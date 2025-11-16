@@ -28,7 +28,7 @@ const METRIC_BASE_OFFSETS = {
 const METRIC_DAILY_INCREMENTS = {
   supplier: 2,  // 하루당 +2
   seller: 3,    // 하루당 +3
-  member: 5     // 하루당 +5
+  member: 6     // 하루당 +5
 };
 
 function getDynamicMetricOffsets(referenceDate = new Date()) {
