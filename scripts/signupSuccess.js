@@ -1,215 +1,109 @@
-document.addEventListener('DOMContentLoaded', async () => {
-  if (window.luceI18n?.init) {
-    await window.luceI18n.init({ root: document, langSwitcherSelector: '.lang-switcher' });
+(function () {
+  const PREVIEW_STORAGE_KEY = 'luce-signup-preview';
+  const copy = window.luceSignupCopy || {};
+
+  function getLang() {
+    return window.luceI18n?.getCurrentLanguage?.() || 'ko';
   }
 
-  const previewContainer = document.getElementById('signup-preview');
-  const emptyMessage = document.getElementById('signup-preview-empty');
-
-  if (!previewContainer) {
-    return;
+  function translate(key) {
+    const lang = getLang();
+    const fallback = copy.ko || {};
+    return copy[lang]?.[key] ?? fallback[key] ?? key;
   }
 
-  let previewData = null;
-  try {
-    const stored = sessionStorage.getItem('signupPreview');
-    if (stored) {
-      previewData = JSON.parse(stored);
+  function formatPlatforms(platforms) {
+    if (!platforms) {
+      return '';
     }
-  } catch (error) {
-    console.warn('Failed to parse stored preview data', error);
-  }
 
-  sessionStorage.removeItem('signupPreview');
-
-  if (!previewData) {
-    if (emptyMessage) {
-      emptyMessage.hidden = false;
+    if (Array.isArray(platforms)) {
+      return platforms.join(', ');
     }
-    return;
+
+    return String(platforms);
   }
 
-  if (emptyMessage) {
-    emptyMessage.hidden = true;
-  }
-
-  const fieldConfigs = [
-    {
-      labelKey: 'signup_preview_user_type_label',
-      getValue: () => ({ type: 'i18n', key: getUserTypeKey(previewData.user_type), fallback: previewData.user_type || '' })
-    },
-    {
-      labelKey: 'signup_preview_name_label',
-      getValue: () => previewData.full_name
-    },
-    {
-      labelKey: 'signup_preview_email_label',
-      getValue: () => previewData.email
-    },
-    {
-      labelKey: 'signup_preview_phone_label',
-      getValue: () => formatPhoneNumber(previewData.phone_number)
-    },
-    {
-      labelKey: 'signup_preview_company_label',
-      getValue: () => previewData.company_name
-    },
-    {
-      labelKey: 'signup_preview_business_label',
-      getValue: () => formatBusinessRegistrationNumber(previewData.business_registration_number) || previewData.business_registration_number
-    },
-    {
-      labelKey: 'signup_preview_platforms_label',
-      getValue: () => {
-        if (!Array.isArray(previewData.main_platforms) || previewData.main_platforms.length === 0) {
-          return '';
-        }
-
-        return previewData.main_platforms.map(formatPlatformLabel).filter(Boolean).join(', ');
-      }
-    },
-    {
-      labelKey: 'signup_preview_channel_label',
-      getValue: () => previewData.channel_url
-    },
-    {
-      labelKey: 'signup_preview_marketing_label',
-      getValue: () => ({
-        type: 'i18n',
-        key: previewData.marketing_consent ? 'signup_preview_marketing_yes' : 'signup_preview_marketing_no',
-        fallback: previewData.marketing_consent ? '동의' : '미동의'
-      })
-    }
-  ];
-
-  const list = document.createElement('dl');
-  list.classList.add('preview-list');
-
-  fieldConfigs.forEach(config => {
-    const valueEntry = config.getValue();
-    const value = valueEntry?.type === 'i18n' ? valueEntry.fallback : valueEntry;
-
-    if (!value || (typeof value === 'string' && value.trim().length === 0)) {
+  function renderPreview(previewContainer, emptyElement, data) {
+    if (!previewContainer || !emptyElement) {
       return;
     }
 
-    const dt = document.createElement('dt');
-    dt.setAttribute('data-i18n-key', config.labelKey);
-    dt.textContent = getFallbackLabel(config.labelKey);
-
-    const dd = document.createElement('dd');
-    if (valueEntry?.type === 'i18n' && valueEntry.key) {
-      dd.setAttribute('data-i18n-key', valueEntry.key);
-      dd.textContent = valueEntry.fallback;
-    } else {
-      dd.textContent = value;
+    if (!data) {
+      emptyElement.hidden = false;
+      previewContainer.hidden = true;
+      previewContainer.innerHTML = '';
+      return;
     }
 
-    list.appendChild(dt);
-    list.appendChild(dd);
+    emptyElement.hidden = true;
+    previewContainer.hidden = false;
+    previewContainer.innerHTML = '';
+
+    const title = document.createElement('h3');
+    title.textContent = translate('previewTitle');
+    previewContainer.appendChild(title);
+
+    const list = document.createElement('dl');
+    list.classList.add('preview-list');
+
+    const entries = [
+      { label: translate('previewUserType'), value: translate(`userType_${data.user_type}`) },
+      { label: translate('previewName'), value: data.full_name },
+      { label: translate('previewEmail'), value: data.email },
+      { label: translate('previewPhone'), value: data.phone_number },
+      { label: translate('previewCompany'), value: data.company_name },
+      { label: translate('previewBusinessNumber'), value: data.business_registration_number },
+      { label: translate('previewPlatforms'), value: formatPlatforms(data.main_platforms) },
+      { label: translate('previewChannel'), value: data.channel_url },
+      {
+        label: translate('previewMarketing'),
+        value: data.marketing_consent ? translate('previewMarketingYes') : translate('previewMarketingNo')
+      }
+    ];
+
+    entries
+      .filter(entry => entry.value && String(entry.value).trim().length > 0)
+      .forEach(entry => {
+        const dt = document.createElement('dt');
+        dt.textContent = entry.label;
+        const dd = document.createElement('dd');
+        dd.textContent = entry.value;
+        list.appendChild(dt);
+        list.appendChild(dd);
+      });
+
+    previewContainer.appendChild(list);
+  }
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    if (window.luceI18n?.init) {
+      await window.luceI18n.init({ root: document, langSwitcherSelector: '.lang-switcher' });
+    }
+
+    const previewContainer = document.getElementById('signup-success-preview');
+    const emptyElement = document.getElementById('signup-success-empty');
+    let parsedData = null;
+
+    try {
+      const stored = sessionStorage.getItem(PREVIEW_STORAGE_KEY);
+      if (stored) {
+        parsedData = JSON.parse(stored);
+      }
+    } catch (error) {
+      console.error('Failed to parse signup preview payload', error);
+    }
+
+    try {
+      sessionStorage.removeItem(PREVIEW_STORAGE_KEY);
+    } catch (error) {
+      console.warn('Failed to clear signup preview payload', error);
+    }
+
+    renderPreview(previewContainer, emptyElement, parsedData);
+
+    document.addEventListener('luce:language-changed', () => {
+      renderPreview(previewContainer, emptyElement, parsedData);
+    });
   });
-
-  if (list.children.length === 0) {
-    if (emptyMessage) {
-      emptyMessage.hidden = false;
-    }
-    return;
-  }
-
-  const title = document.createElement('h3');
-  title.setAttribute('data-i18n-key', 'signup_preview_heading');
-  title.textContent = '신청 정보 미리보기';
-  previewContainer.appendChild(title);
-
-  previewContainer.appendChild(list);
-
-  if (window.luceI18n?.setLanguage) {
-    const currentLang = window.luceI18n.getCurrentLanguage?.() || 'ko';
-    window.luceI18n.setLanguage(currentLang, { root: document });
-  }
-});
-
-function getUserTypeKey(type) {
-  switch (type) {
-    case 'supplier':
-      return 'signup_type_supplier_badge';
-    case 'seller':
-      return 'signup_type_seller_badge';
-    case 'member':
-      return 'signup_type_member_badge';
-    default:
-      return '';
-  }
-}
-
-function getFallbackLabel(key) {
-  const fallbacks = {
-    signup_preview_user_type_label: '회원 유형',
-    signup_preview_name_label: '이름',
-    signup_preview_email_label: '이메일',
-    signup_preview_phone_label: '연락처',
-    signup_preview_company_label: '회사/브랜드',
-    signup_preview_business_label: '사업자등록번호',
-    signup_preview_platforms_label: '주요 플랫폼',
-    signup_preview_channel_label: '채널 URL',
-    signup_preview_marketing_label: '마케팅 수신',
-    signup_preview_heading: '신청 정보 미리보기'
-  };
-
-  return fallbacks[key] || '';
-}
-
-function normalizeBusinessRegistrationNumber(value = '') {
-  return value?.toString().replace(/\D/g, '').slice(0, 10) || '';
-}
-
-function formatBusinessRegistrationNumber(value = '') {
-  const digits = normalizeBusinessRegistrationNumber(value);
-  if (!digits) {
-    return '';
-  }
-
-  const part1 = digits.slice(0, 3);
-  const part2 = digits.slice(3, 5);
-  const part3 = digits.slice(5, 10);
-  return [part1, part2, part3].filter(Boolean).join('-');
-}
-
-const platformLabelMap = {
-  youtube: 'YouTube',
-  tiktok: 'TikTok',
-  instagram: 'Instagram',
-  grab: 'Grab',
-  clickmate: 'Clickmate',
-  other: 'Other'
-};
-
-function formatPlatformLabel(value) {
-  if (!value) {
-    return '';
-  }
-
-  const normalized = value.toString().trim().toLowerCase();
-  return platformLabelMap[normalized] || value;
-}
-
-function normalizePhoneNumber(value = '') {
-  return value?.toString().replace(/\D/g, '').slice(0, 11) || '';
-}
-
-function formatPhoneNumber(value = '') {
-  const digits = normalizePhoneNumber(value);
-  if (!digits) {
-    return '';
-  }
-
-  if (digits.length < 4) {
-    return digits;
-  }
-
-  if (digits.length < 8) {
-    return `${digits.slice(0, 3)}-${digits.slice(3)}`;
-  }
-
-  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7, 11)}`;
-}
+})();

@@ -89,7 +89,7 @@ img {
 .logo {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   color: var(--primary-color);
 }
 
@@ -1285,6 +1285,17 @@ body.signup-body {
   padding: 1.5rem;
   background: #fff;
   box-shadow: var(--shadow-sm);
+}
+
+.signup-complete__empty {
+  color: var(--text-secondary);
+}
+
+.signup-complete__actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
 .preview-list {

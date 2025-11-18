@@ -1,6 +1,6 @@
 const supabaseClient = window.supabaseClient;
 
-const copy = {
+const defaultCopy = {
   ko: {
     selectType: '회원 유형을 선택해주세요.',
     formInvalid: '필수 정보를 다시 확인해주세요.',
@@ -8,11 +8,11 @@ const copy = {
     processing: '가입을 처리하고 있습니다. 잠시만 기다려주세요...',
     duplicateChannel: '이미 등록된 채널 URL입니다. 다른 URL을 입력해주세요.',
     platformRequired: '주요 판매 플랫폼을 최소 1개 이상 선택해주세요.',
-    signupSuccess: '가입이 완료되었습니다. 환영합니다!',
+    signupSuccess: '가입이 완료되었습니다. 이메일 인증을 진행해주세요.',
     signupError: '가입 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
     noSupabase: '시스템 설정에 문제가 있습니다. 잠시 후 다시 시도해주세요.',
     help_supplier: '공급업체는 회사/브랜드명과 사업자등록번호를 필수로 입력해야 합니다.',
-    help_seller: '셀러는 연락 가능한 정보를 입력하고 운영 중인 채널을 알려주세요.',
+    help_seller: '셀러는 연락처와 운영 중인 채널 정보를 알려주세요. 회사명과 사업자등록번호는 필요하지 않습니다.',
     help_member: '일반회원은 기본 연락처만 입력하면 가입이 완료됩니다.',
     previewTitle: '신청 정보 미리보기',
     previewUserType: '회원 유형',
@@ -37,11 +37,11 @@ const copy = {
     processing: 'Processing your registration. Please wait...',
     duplicateChannel: 'This channel URL is already registered. Please use a different one.',
     platformRequired: 'Select at least one primary platform.',
-    signupSuccess: 'Registration complete. Welcome aboard!',
+    signupSuccess: 'Registration complete. Please verify your email.',
     signupError: 'An error occurred while signing up. Please try again later.',
     noSupabase: 'Configuration error detected. Please try again soon.',
     help_supplier: 'Suppliers must provide a company/brand name and business registration number.',
-    help_seller: 'Sellers should share reachable contact details and tell us about active channels.',
+    help_seller: 'Sellers only need to share contact and channel details—company information is not required.',
     help_member: 'Members can join with just their basic contact information.',
     previewTitle: 'Registration Preview',
     previewUserType: 'Member Type',
@@ -66,11 +66,11 @@ const copy = {
     processing: '正在处理您的注册，请稍候……',
     duplicateChannel: '该频道 URL 已被注册，请输入其他地址。',
     platformRequired: '请至少选择一个主要销售平台。',
-    signupSuccess: '注册完成，欢迎加入！',
+    signupSuccess: '注册完成。请前往邮箱完成验证。',
     signupError: '注册过程中发生错误，请稍后再试。',
     noSupabase: '系统配置出现问题，请稍后再试。',
     help_supplier: '供应商需填写公司/品牌名称及营业执照号码。',
-    help_seller: '卖家请填写可联系信息，并告知正在运营的频道。',
+    help_seller: '卖家只需提供联系方式和正在运营的频道信息，无需填写公司资料。',
     help_member: '普通会员仅需填写基本联系方式即可完成注册。',
     previewTitle: '注册信息预览',
     previewUserType: '会员类型',
@@ -90,6 +90,11 @@ const copy = {
   }
 };
 
+const copy = window.luceSignupCopy || defaultCopy;
+if (!window.luceSignupCopy) {
+  window.luceSignupCopy = copy;
+}
+
 function getLang() {
   return window.luceI18n?.getCurrentLanguage?.() || 'ko';
 }
@@ -99,59 +104,27 @@ function translate(key) {
   return copy[lang]?.[key] ?? copy.ko[key] ?? key;
 }
 
-function normalizeBusinessRegistrationNumber(value = '') {
-  return value.replace(/\D/g, '').slice(0, 10);
-}
+let profileTableNamePromise = null;
 
-function formatBusinessRegistrationNumber(value = '') {
-  const digits = normalizeBusinessRegistrationNumber(value);
-  if (!digits) {
-    return '';
+function getProfileTableName() {
+  if (!profileTableNamePromise) {
+    profileTableNamePromise = (async () => {
+      if (typeof window.resolveSupabaseProfileTable === 'function') {
+        try {
+          const name = await window.resolveSupabaseProfileTable();
+          if (name) {
+            return name;
+          }
+        } catch (error) {
+          console.error('Failed to resolve profile table name', error);
+        }
+      }
+
+      return 'profile';
+    })();
   }
 
-  const part1 = digits.slice(0, 3);
-  const part2 = digits.slice(3, 5);
-  const part3 = digits.slice(5, 10);
-  return [part1, part2, part3].filter(Boolean).join('-');
-}
-
-function normalizePhoneNumber(value = '') {
-  return value.replace(/\D/g, '').slice(0, 11);
-}
-
-function formatPhoneNumber(value = '') {
-  const digits = normalizePhoneNumber(value);
-  if (!digits) {
-    return '';
-  }
-
-  if (digits.length < 4) {
-    return digits;
-  }
-
-  if (digits.length < 8) {
-    return `${digits.slice(0, 3)}-${digits.slice(3)}`;
-  }
-
-  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7, 11)}`;
-}
-
-const platformLabelMap = {
-  youtube: 'YouTube',
-  tiktok: 'TikTok',
-  instagram: 'Instagram',
-  grab: 'Grab',
-  clickmate: 'Clickmate',
-  other: 'Other'
-};
-
-function formatPlatformLabel(value) {
-  if (!value) {
-    return '';
-  }
-
-  const normalized = value.toString().trim().toLowerCase();
-  return platformLabelMap[normalized] || value;
+  return profileTableNamePromise;
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -165,9 +138,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const form = document.getElementById('signup-form');
   const feedbackEl = document.getElementById('signup-feedback');
+  const userTypeRadios = Array.from(document.querySelectorAll('input[name="user_type"]'));
   const businessFieldGroups = document.querySelectorAll('[data-extra="business"]');
   const channelFieldGroups = document.querySelectorAll('[data-extra="channels"]');
   const platformFieldGroups = document.querySelectorAll('[data-extra="platforms"]');
+  const memberTypeCards = document.querySelectorAll('.member-type-card');
   const termsConsent = document.getElementById('terms_consent');
   const selectedTypeHelp = document.getElementById('selected-type-help');
   const businessRegistrationInput = document.getElementById('business_registration_number');
@@ -269,22 +244,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     return type;
   }
 
-  if (!applyUserTypeFromQuery()) {
-    return;
-  }
-
   function updateTypeHelp(type) {
     if (!selectedTypeHelp) return;
     const key = `help_${type}`;
     selectedTypeHelp.textContent = translate(key);
     selectedTypeHelp.dataset.copyKey = key;
-  }
-
-  function updateTypeLabel(type) {
-    if (!selectedTypeLabel) return;
-    const key = `userType_${type}`;
-    selectedTypeLabel.textContent = translate(key);
-    selectedTypeLabel.dataset.copyKey = key;
   }
 
   function updateFormForUserType(type) {
@@ -310,10 +274,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
 
-    if (businessRegistrationInput) {
-      businessRegistrationInput.required = isSupplier;
+    const registrationInput = document.getElementById('business_registration_number');
+    if (registrationInput) {
+      registrationInput.required = isSupplier;
       if (!isSupplier) {
-        businessRegistrationInput.value = '';
+        registrationInput.value = '';
       }
     }
 
@@ -339,32 +304,57 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
 
-    updateTypeLabel(type);
     updateTypeHelp(type);
   }
 
-  function getSelectedPlatforms() {
-    return Array.from(form.querySelectorAll('input[name="main_platforms"]:checked'))
-      .map(input => input.value?.toString().trim())
-      .filter(Boolean);
-  }
+  stepButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetStep = Number(btn.dataset.step);
+      if (Number.isNaN(targetStep) || targetStep > currentStep) {
+        return;
+      }
 
-  policyToggles.forEach(button => {
-    button.addEventListener('click', () => {
-      const targetId = button.dataset.togglePolicy;
-      const target = document.getElementById(targetId);
-      if (!target) return;
+      if (targetStep === 2 && !selectedUserType) {
+        setFeedback('error', 'selectType');
+        return;
+      }
 
-      const shouldShow = target.hasAttribute('hidden');
-      if (shouldShow) {
-        target.removeAttribute('hidden');
-        button.textContent = '[닫기]';
-      } else {
-        target.setAttribute('hidden', '');
-        button.textContent = '[보기]';
+      resetFeedback();
+      setStep(targetStep);
+    });
+  });
+
+  userTypeRadios.forEach(radio => {
+    radio.addEventListener('change', () => {
+      resetFeedback();
+      memberTypeCards.forEach(card => card.classList.remove('is-selected'));
+      const parentCard = radio.closest('.member-type-card');
+      if (parentCard) {
+        parentCard.classList.add('is-selected');
       }
     });
   });
+
+  toStep2Button.addEventListener('click', () => {
+    if (!selectedUserType) {
+      setFeedback('error', 'selectType');
+      return;
+    }
+
+    resetFeedback();
+    setStep(2);
+    document.getElementById('full_name')?.focus();
+  });
+
+  backToStep1.addEventListener('click', () => {
+    resetFeedback();
+    setStep(1);
+    hideOptionalGroups();
+  });
+
+  function getSelectedPlatforms() {
+    return Array.from(form.querySelectorAll('input[name="main_platforms"]:checked')).map(input => input.value);
+  }
 
   document.addEventListener('luce:language-changed', () => {
     if (feedbackEl.dataset.copyKey) {
@@ -372,7 +362,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (selectedUserType) {
-      updateTypeLabel(selectedUserType);
       updateTypeHelp(selectedUserType);
     }
   });
@@ -383,6 +372,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (!selectedUserType) {
       setFeedback('error', 'selectType');
+      setStep(1);
       return;
     }
 
@@ -393,21 +383,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const formData = new FormData(form);
     const selectedPlatforms = getSelectedPlatforms();
-    const databasePlatforms = selectedPlatforms.map(platform => platform.toLowerCase());
-    const businessRegistrationRaw = formData.get('business_registration_number')?.toString().trim() || '';
-    const businessRegistrationSanitized = normalizeBusinessRegistrationNumber(businessRegistrationRaw);
-    const phoneNumberRaw = formData.get('phone_number')?.toString().trim() || '';
-    const phoneNumberSanitized = normalizePhoneNumber(phoneNumberRaw);
     const payload = {
       user_type: selectedUserType,
       full_name: formData.get('full_name')?.toString().trim() || '',
       email: formData.get('email')?.toString().trim() || '',
       password: formData.get('password')?.toString().trim() || '',
-      phone_number: phoneNumberSanitized,
+      phone_number: formData.get('phone_number')?.toString().trim() || '',
       marketing_consent: formData.get('marketing_consent') === 'on',
       company_name: formData.get('company_name')?.toString().trim() || '',
-      business_registration_number: businessRegistrationSanitized,
-      main_platforms: databasePlatforms,
+      business_registration_number: formData.get('business_registration_number')?.toString().trim() || '',
+      main_platforms: selectedPlatforms,
       channel_url: formData.get('channel_url')?.toString().trim() || ''
     };
 
@@ -429,9 +414,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     setFeedback('loading', 'processing');
 
     try {
+      const profileTable = await getProfileTableName();
+
       if (payload.channel_url) {
         const { count, error: duplicateError } = await supabaseClient
-          .from('profiles')
+          .from(profileTable)
           .select('id', { count: 'exact', head: true })
           .eq('channel_url', payload.channel_url);
 
@@ -454,7 +441,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             full_name: payload.full_name,
             phone_number: payload.phone_number,
             company_name: payload.company_name
-          }
+          },
+          emailRedirectTo: `${window.location.origin}/index.html`
         }
       });
 
@@ -472,17 +460,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         id: userId,
         user_type: payload.user_type,
         full_name: payload.full_name,
-        phone_number: payload.phone_number || null,
-        marketing_consent: payload.marketing_consent === true,
+        phone_number: payload.phone_number,
+        marketing_consent: payload.marketing_consent,
         company_name: payload.company_name || null,
         business_registration_number: payload.business_registration_number || null,
-        main_platforms: payload.main_platforms.length ? payload.main_platforms : null,
+        main_platforms: payload.main_platforms.length ? payload.main_platforms.join(', ') : null,
         channel_url: payload.channel_url || null
       };
 
-      const { error: profileError } = await supabaseClient
-        .from('profiles')
-        .upsert(profilePayload, { onConflict: 'id' });
+      const { error: profileError } = await supabaseClient.from(profileTable).insert(profilePayload);
 
       if (profileError) {
         const isDuplicateKey =
@@ -512,21 +498,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         user_type: payload.user_type,
         full_name: payload.full_name,
         email: payload.email,
-        phone_number: formatPhoneNumber(payload.phone_number),
+        phone_number: payload.phone_number,
         marketing_consent: payload.marketing_consent,
         company_name: payload.company_name,
-        business_registration_number: formatBusinessRegistrationNumber(payload.business_registration_number),
-        main_platforms: selectedPlatforms.map(formatPlatformLabel),
-        channel_url: payload.channel_url
+        business_registration_number: payload.business_registration_number,
+        main_platforms: [...payload.main_platforms],
+        channel_url: payload.channel_url,
+        created_at: new Date().toISOString()
       };
 
       try {
-        sessionStorage.setItem('signupPreview', JSON.stringify(previewData));
+        sessionStorage.setItem('luce-signup-preview', JSON.stringify(previewData));
       } catch (storageError) {
-        console.warn('Preview storage failed', storageError);
+        console.warn('Failed to persist signup preview', storageError);
       }
 
-      window.location.href = 'signupSuccess.html';
+      const lang = getLang();
+      const successUrl = new URL('signup-success.html', window.location.href);
+      successUrl.searchParams.set('lang', lang);
+      window.location.href = successUrl.toString();
+      return;
     } catch (error) {
       console.error('Signup error', error);
       setFeedback('error', null, error.message || translate('signupError'));

@@ -1,107 +1,58 @@
-// 1. Supabase 클라이언트를 초기화하는 스크립트를 로드합니다.
-//    (index.html에서 <script type="module" src="scripts/supabaseClient.js"></script> 로드)
-//    여기서는 전역(window.supabaseClient)에 주입된 클라이언트를 활용합니다.
+const supabaseClient = window.supabaseClient;
+
+const dynamicCopy = {
+  ko: {
+    loading: '가입 정보를 불러오는 중입니다...',
+    empty: '등록된 가입 정보가 없습니다.',
+    error: '가입 정보를 불러오지 못했습니다.',
+    unavailable: '현재 가입 정보를 확인할 수 없습니다.',
+    userType: {
+      supplier: '공급업체',
+      seller: '셀러',
+      member: '일반회원'
+    },
+    marketing: {
+      yes: '동의',
+      no: '미동의'
+    }
+  },
+  en: {
+    loading: 'Loading signup data...',
+    empty: 'No signup records found.',
+    error: 'Failed to load signup data.',
+    unavailable: 'Signup data is currently unavailable.',
+    userType: {
+      supplier: 'Supplier',
+      seller: 'Seller',
+      member: 'Member'
+    },
+    marketing: {
+      yes: 'Opted-in',
+      no: 'Opted-out'
+    }
+  },
+  zh: {
+    loading: '正在加载会员注册信息……',
+    empty: '暂无注册信息。',
+    error: '无法加载注册信息。',
+    unavailable: '目前无法查看注册信息。',
+    userType: {
+      supplier: '供应商',
+      seller: '卖家',
+      member: '普通会员'
+    },
+    marketing: {
+      yes: '同意接收',
+      no: '不同意'
+    }
+  }
+};
 
 const localeMap = {
   ko: 'ko-KR',
   en: 'en-US',
   zh: 'zh-CN'
 };
-
-const STATIC_METRIC_COUNTS = Object.freeze({
-  supplier: 0,
-  seller: 0,
-  member: 0
-});
-
-const LOOKBOOK_TABLE_CANDIDATES = ['lookbook_items', 'lookbook', 'looks'];
-
-// 📌 2025-11-15 기준으로 하루마다 증가시키는 메트릭 오프셋 설정
-const METRIC_BASE_DATE = new Date(2025, 10, 15); // 2025-11-15 (월은 0부터 시작)
-
-const METRIC_BASE_OFFSETS = {
-  supplier: 110,
-  seller: 275,
-  member: 595
-};
-
-const METRIC_DAILY_INCREMENTS = {
-  supplier: 2,  // 하루당 +2
-  seller: 3,    // 하루당 +3
-  member: 6     // 하루당 +5
-};
-
-function getDynamicMetricOffsets(referenceDate = new Date()) {
-  // 오늘 날짜 00:00
-  const todayStart = new Date(
-    referenceDate.getFullYear(),
-    referenceDate.getMonth(),
-    referenceDate.getDate()
-  );
-
-  // 기준일 00:00 (2025-11-15)
-  const baseStart = new Date(
-    METRIC_BASE_DATE.getFullYear(),
-    METRIC_BASE_DATE.getMonth(),
-    METRIC_BASE_DATE.getDate()
-  );
-
-  const diffMs = todayStart - baseStart;
-  const diffDays = Math.max(0, Math.floor(diffMs / 86400000)); // 하루(ms)
-
-  return {
-    supplier: METRIC_BASE_OFFSETS.supplier + diffDays * METRIC_DAILY_INCREMENTS.supplier,
-    seller:   METRIC_BASE_OFFSETS.seller   + diffDays * METRIC_DAILY_INCREMENTS.seller,
-    member:   METRIC_BASE_OFFSETS.member   + diffDays * METRIC_DAILY_INCREMENTS.member
-  };
-}
-
-async function resolveSupabaseClient(options = {}) {
-  const { attempts = 5, delayMs = 150 } = options;
-
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
-  if (window.supabaseClient) {
-    return window.supabaseClient;
-  }
-
-  if (typeof window.getSupabaseClient === 'function') {
-    try {
-      const client = await window.getSupabaseClient();
-      if (client) {
-        return client;
-      }
-    } catch (error) {
-      console.error('Supabase client 초기화 실패:', error);
-    }
-  }
-
-  for (let attempt = 0; attempt < attempts; attempt += 1) {
-    if (window.supabaseClient) {
-      return window.supabaseClient;
-    }
-
-    if (window.supabaseClientReady && typeof window.supabaseClientReady.then === 'function') {
-      try {
-        const client = await window.supabaseClientReady;
-        if (client) {
-          return client;
-        }
-      } catch (error) {
-        console.error('Supabase client 초기화 실패:', error);
-        break;
-      }
-    }
-
-    if (attempt < attempts - 1) {
-      await new Promise(resolve => setTimeout(resolve, delayMs));
-    }
-  }
-
-  return null;
-}
 
 document.addEventListener('DOMContentLoaded', async () => {
   const grid = document.getElementById('lookbook-grid');
@@ -112,40 +63,69 @@ document.addEventListener('DOMContentLoaded', async () => {
   const metricMembers = document.getElementById('metric-members');
   const metricUpdated = document.getElementById('metric-updated');
   const metricError = document.getElementById('metric-error');
+  const signupStatusBody = document.getElementById('signup-status-body');
   const filterButtons = document.querySelectorAll('.filter-btn');
   const navLinks = document.querySelectorAll('.main-nav a[data-view-target]');
   const sections = document.querySelectorAll('[data-view-section]');
-
-  if (!grid) {
-    console.error('룩북 그리드를 찾을 수 없습니다.');
-    return;
-  }
 
   if (window.luceI18n?.init) {
     await window.luceI18n.init({ root: document, langSwitcherSelector: '.lang-switcher' });
   }
 
-  let allData = normalizeLookbookItems(Array.isArray(window.lookbookData) ? window.lookbookData : []);
-  let cachedCounts = { ...STATIC_METRIC_COUNTS };
-  let cachedLatestCreatedAt = null;
-  let lastMetricsError = false;
-
-  function setLookbookLoading(isLoading) {
-    if (!lookbookLoader) {
-      return;
+  if (!grid || !window.lookbookData) {
+    console.error('룩북 그리드 또는 데이터를 찾을 수 없습니다.');
+    if (grid) {
+      grid.innerHTML = '<p>룩북 데이터를 불러오는 데 실패했습니다.</p>';
     }
-
-    if (isLoading) {
-      lookbookLoader.removeAttribute('hidden');
-      lookbookLoader.setAttribute('aria-hidden', 'false');
-    } else {
-      lookbookLoader.setAttribute('aria-hidden', 'true');
-      lookbookLoader.setAttribute('hidden', '');
-    }
+    return;
   }
+
+  const allData = window.lookbookData;
+  let cachedProfiles = [];
+  let lastRenderError = false;
+  let lastErrorKey = null;
 
   function getLang() {
     return window.luceI18n?.getCurrentLanguage?.() || 'ko';
+  }
+
+  function translateDynamic(key) {
+    const lang = getLang();
+    return dynamicCopy[lang]?.[key] ?? dynamicCopy.ko[key] ?? key;
+  }
+
+  function userTypeLabel(type) {
+    const lang = getLang();
+    return dynamicCopy[lang]?.userType?.[type] ?? dynamicCopy.ko.userType[type] ?? type;
+  }
+
+  function marketingLabel(consent) {
+    const lang = getLang();
+    const key = consent ? 'yes' : 'no';
+    return dynamicCopy[lang]?.marketing?.[key] ?? dynamicCopy.ko.marketing[key];
+  }
+
+  let profileTableNamePromise = null;
+
+  function getProfileTableName() {
+    if (!profileTableNamePromise) {
+      profileTableNamePromise = (async () => {
+        if (typeof window.resolveSupabaseProfileTable === 'function') {
+          try {
+            const name = await window.resolveSupabaseProfileTable();
+            if (name) {
+              return name;
+            }
+          } catch (error) {
+            console.error('Failed to resolve profile table name', error);
+          }
+        }
+
+        return 'profile';
+      })();
+    }
+
+    return profileTableNamePromise;
   }
 
   function formatDate(value) {
@@ -168,12 +148,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function renderGrid(items) {
-    if (!grid) {
-      return;
-    }
+    if (!grid) return;
 
-    if (!items || items.length === 0) {
-      grid.innerHTML = '<p>현재 표시할 룩이 없습니다.</p>';
+    if (items.length === 0) {
+      grid.innerHTML = '<p>해당 카테고리의 룩이 없습니다.</p>';
       return;
     }
 
@@ -182,13 +160,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       const card = document.createElement('article');
       card.className = 'look-card';
       card.dataset.id = item.id;
-
-      const imageSrc = encodeURI(item.imageUrl);
-      const priceLabel = item.price || item.supplier || '';
-
       card.innerHTML = `
         <div class="look-card__image-wrapper">
-          <img src="${imageSrc}" alt="${item.title}" class="look-card__image" loading="lazy"
+          <img src="${item.imageUrl}" alt="${item.title}" class="look-card__image" loading="lazy"
                onerror="this.src='https://placehold.co/600x800/EEE/333?text=Image+Not+Found'; this.classList.add('error');">
         </div>
         <div class="look-card__body">
@@ -200,15 +174,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  function updateMetrics(counts = cachedCounts, latestCreatedAt = cachedLatestCreatedAt, hasError = lastMetricsError) {
+  function updateMetricsFromProfiles(profiles = []) {
     if (metricProducts) {
       metricProducts.textContent = allData.length;
     }
 
-    const activeCounts = counts || { supplier: 0, seller: 0, member: 0 };
-    const supplierCount = Number.isFinite(activeCounts.supplier) ? activeCounts.supplier : 0;
-    const sellerCount = Number.isFinite(activeCounts.seller) ? activeCounts.seller : 0;
-    const memberCount = Number.isFinite(activeCounts.member) ? activeCounts.member : 0;
+    const supplierCount = profiles.filter(profile => profile.user_type === 'supplier').length;
+    const sellerCount = profiles.filter(profile => profile.user_type === 'seller').length;
+    const memberCount = profiles.filter(profile => profile.user_type === 'member').length;
 
     if (metricSuppliers) {
       metricSuppliers.textContent = supplierCount;
@@ -220,129 +193,154 @@ document.addEventListener('DOMContentLoaded', async () => {
       metricMembers.textContent = memberCount;
     }
     if (metricUpdated) {
-      metricUpdated.textContent = latestCreatedAt ? formatDate(latestCreatedAt) : '-';
+      const latest = profiles[0]?.created_at;
+      metricUpdated.textContent = formatDate(latest);
     }
 
-    if (!metricError) {
-      return;
-    }
-
-    if (hasError) {
-      metricError.hidden = false;
-      metricError.removeAttribute('hidden');
-    } else {
+    if (metricError) {
       metricError.hidden = true;
       metricError.setAttribute('hidden', '');
     }
   }
 
-  async function fetchProfileMetrics() {
-    const supabase = await resolveSupabaseClient();
-
-    if (!supabase) {
-      console.error('Supabase client is not available.');
-      lastMetricsError = true;
-      updateMetrics(cachedCounts, cachedLatestCreatedAt, true);
+  function renderSignupStatus(profiles = [], errorKey = null) {
+    if (!signupStatusBody) {
       return;
     }
 
-    try {
-      const [supplierRes, sellerRes, memberRes, latestRes] = await Promise.all([
-        supabase
-          .from('profiles')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_type', 'supplier'),
-        supabase
-          .from('profiles')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_type', 'seller'),
-        supabase
-          .from('profiles')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_type', 'member'),
-        supabase
-          .from('profiles')
-          .select('created_at')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single()
-      ]);
+    signupStatusBody.innerHTML = '';
 
-      const errors = [supplierRes.error, sellerRes.error, memberRes.error, latestRes.error].filter(Boolean);
-      if (errors.length > 0) {
-        throw new Error(errors.map(e => e.message).join(', '));
-      }
-
-      // 📌 날짜 기반 동적 오프셋 적용
-      const dynamicOffsets = getDynamicMetricOffsets();
-
-      cachedCounts = {
-        supplier: (supplierRes.count ?? 0) + dynamicOffsets.supplier,
-        seller:   (sellerRes.count   ?? 0) + dynamicOffsets.seller,
-        member:   (memberRes.count   ?? 0) + dynamicOffsets.member
-      };
-      cachedLatestCreatedAt = latestRes.data?.created_at || null;
-      lastMetricsError = false;
-
-      updateMetrics(cachedCounts, cachedLatestCreatedAt, false);
-    } catch (error) {
-      console.error('프로필 메트릭 로딩 오류:', error);
-      lastMetricsError = true;
-      updateMetrics(cachedCounts, cachedLatestCreatedAt, true);
+    if (errorKey) {
+      const errorRow = document.createElement('tr');
+      const errorCell = document.createElement('td');
+      errorCell.colSpan = 7;
+      errorCell.textContent = translateDynamic(errorKey);
+      errorRow.appendChild(errorCell);
+      signupStatusBody.appendChild(errorRow);
+      return;
     }
-  }
 
-  async function fetchLookbookRows(supabase) {
-    for (const tableName of LOOKBOOK_TABLE_CANDIDATES) {
-      try {
-        const { data, error } = await supabase
-          .from(tableName)
-          .select('*')
-          .order('created_at', { ascending: false });
+    if (profiles.length === 0) {
+      const emptyRow = document.createElement('tr');
+      const emptyCell = document.createElement('td');
+      emptyCell.colSpan = 7;
+      emptyCell.textContent = translateDynamic('empty');
+      emptyRow.appendChild(emptyCell);
+      signupStatusBody.appendChild(emptyRow);
+      return;
+    }
 
-        if (error) {
-          console.warn(`[Lookbook] ${tableName} 테이블 조회 실패:`, error.message);
-          continue;
+    profiles.forEach(profile => {
+      const profileRow = document.createElement('tr');
+
+      const nameCell = document.createElement('td');
+      nameCell.textContent = profile.full_name || '-';
+
+      const typeCell = document.createElement('td');
+      typeCell.textContent = userTypeLabel(profile.user_type);
+
+      const companyCell = document.createElement('td');
+      companyCell.textContent = profile.company_name || '-';
+
+      const platformCell = document.createElement('td');
+      const platforms = (profile.main_platforms || '')
+        .split(',')
+        .map(platform => platform.trim())
+        .filter(Boolean)
+        .join(', ');
+      platformCell.textContent = platforms || '-';
+
+      const channelCell = document.createElement('td');
+      const channelUrl = profile.channel_url?.trim();
+      if (channelUrl) {
+        if (/^https?:\/\//i.test(channelUrl)) {
+          const link = document.createElement('a');
+          link.href = channelUrl;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          link.textContent = channelUrl;
+          channelCell.appendChild(link);
+        } else {
+          channelCell.textContent = channelUrl;
         }
-
-        return { data: Array.isArray(data) ? data : [], tableName };
-      } catch (error) {
-        console.warn(`[Lookbook] ${tableName} 테이블 조회 중 오류:`, error);
+      } else {
+        channelCell.textContent = '-';
       }
-    }
 
-    return { data: [], tableName: null };
+      const marketingCell = document.createElement('td');
+      marketingCell.textContent = marketingLabel(Boolean(profile.marketing_consent));
+
+      const createdCell = document.createElement('td');
+      createdCell.textContent = formatDate(profile.created_at);
+
+      profileRow.appendChild(nameCell);
+      profileRow.appendChild(typeCell);
+      profileRow.appendChild(companyCell);
+      profileRow.appendChild(platformCell);
+      profileRow.appendChild(channelCell);
+      profileRow.appendChild(marketingCell);
+      profileRow.appendChild(createdCell);
+
+      signupStatusBody.appendChild(profileRow);
+    });
   }
 
-  async function hydrateLookbookFromSupabase() {
-    const supabase = await resolveSupabaseClient({ attempts: 8, delayMs: 200 });
+  async function fetchProfiles() {
+    if (!signupStatusBody) {
+      return;
+    }
 
-    if (!supabase) {
-      if (allData.length === 0) {
-        grid.innerHTML = '<p>룩북 데이터를 불러오는 데 실패했습니다.</p>';
+    signupStatusBody.innerHTML = '';
+    const loadingRow = document.createElement('tr');
+    const loadingCell = document.createElement('td');
+    loadingCell.colSpan = 7;
+    loadingCell.textContent = translateDynamic('loading');
+    loadingRow.appendChild(loadingCell);
+    signupStatusBody.appendChild(loadingRow);
+
+    if (!supabaseClient) {
+      console.warn('Supabase client not available.');
+      cachedProfiles = [];
+      lastRenderError = true;
+      lastErrorKey = 'unavailable';
+      renderSignupStatus([], lastErrorKey);
+      updateMetricsFromProfiles([]);
+      if (metricError) {
+        metricError.hidden = false;
+        metricError.removeAttribute('hidden');
       }
       return;
     }
 
-    setLookbookLoading(true);
-
     try {
-      const { data } = await fetchLookbookRows(supabase);
+      const profileTable = await getProfileTableName();
 
-      if (Array.isArray(data) && data.length > 0) {
-        allData = normalizeLookbookItems(data);
-        renderGrid(allData);
-        updateMetrics();
-      } else if (allData.length === 0) {
-        grid.innerHTML = '<p>등록된 룩이 없습니다.</p>';
+      const { data, error } = await supabaseClient
+        .from(profileTable)
+        .select('id, user_type, full_name, company_name, main_platforms, channel_url, marketing_consent, created_at')
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) {
+        throw error;
       }
+
+      cachedProfiles = Array.isArray(data) ? data : [];
+      lastRenderError = false;
+      lastErrorKey = null;
+      renderSignupStatus(cachedProfiles);
+      updateMetricsFromProfiles(cachedProfiles);
     } catch (error) {
-      console.error('룩북 데이터를 불러오지 못했습니다:', error);
-      if (allData.length === 0) {
-        grid.innerHTML = '<p>룩북 데이터를 불러오는 데 실패했습니다.</p>';
+      console.error('Failed to load signup profiles', error);
+      cachedProfiles = [];
+      lastRenderError = true;
+      lastErrorKey = 'error';
+      renderSignupStatus([], lastErrorKey);
+      updateMetricsFromProfiles([]);
+      if (metricError) {
+        metricError.hidden = false;
+        metricError.removeAttribute('hidden');
       }
-    } finally {
-      setLookbookLoading(false);
     }
   }
 
@@ -363,8 +361,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   navLinks.forEach(link => {
-    link.addEventListener('click', event => {
-      if (link.getAttribute('href') === 'admin.html' || link.getAttribute('href')?.startsWith('signup')) {
+    link.addEventListener('click', (event) => {
+      if (link.getAttribute('href') === 'admin.html' || link.getAttribute('href') === 'signup.html') {
         return;
       }
 
@@ -382,22 +380,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  if (allData.length > 0) {
-    renderGrid(allData);
-    setLookbookLoading(false);
-  } else {
-    setLookbookLoading(true);
-  }
-
-  updateMetrics();
-  hydrateLookbookFromSupabase();
-  fetchProfileMetrics();
+  renderGrid(allData);
+  updateMetricsFromProfiles([]);
+  fetchProfiles();
 
   document.getElementById('lookbook')?.setAttribute('aria-hidden', 'false');
   document.querySelector('.main-nav a[data-view-target="lookbook"]')?.classList.add('active');
 
   document.addEventListener('luce:language-changed', () => {
-    updateMetrics();
+    if (lastRenderError) {
+      renderSignupStatus([], lastErrorKey || 'error');
+      updateMetricsFromProfiles([]);
+      if (metricError) {
+        metricError.hidden = false;
+        metricError.removeAttribute('hidden');
+      }
+      return;
+    }
+
+    renderSignupStatus(cachedProfiles);
+    updateMetricsFromProfiles(cachedProfiles);
   });
 });
 
