@@ -118,6 +118,41 @@ img {
   transition: color 0.2s ease, border-color 0.2s ease;
 }
 
+.hero-media {
+  background: linear-gradient(120deg, rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0));
+  padding: 56px 0;
+}
+
+.hero-media__inner {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 28px;
+  align-items: center;
+}
+
+.hero-media__text h1 {
+  font-size: clamp(28px, 4vw, 36px);
+  margin: 8px 0;
+}
+
+.hero-media__price {
+  font-weight: 700;
+  color: var(--primary-color);
+  margin: 0 0 8px 0;
+}
+
+.hero-media__description {
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.hero-media__player video {
+  width: 100%;
+  border-radius: 16px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.08);
+  background: #000;
+}
+
 .main-nav a:hover {
   color: var(--primary-color);
 }
@@ -880,14 +915,15 @@ body.signup-body {
   z-index: 20;
 }
 
-.signup-header__inner {
+.signup-header .header-inner {
   max-width: var(--container-width);
   margin: 0 auto;
-  padding: 1.5rem 1.5rem;
+  padding: 1.25rem 1.5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .signup-main {
@@ -916,6 +952,22 @@ body.signup-body {
   color: var(--text-secondary);
   font-size: 0.95rem;
   line-height: 1.6;
+}
+
+.signup-type-callout {
+  border: 1px solid var(--border-default);
+  border-radius: 1rem;
+  padding: 1.25rem 1.5rem;
+  background: var(--surface-muted);
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.tag--muted {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text-light);
 }
 
 .signup-steps {
@@ -1019,6 +1071,10 @@ body.signup-body {
   color: var(--text-secondary);
   font-size: 0.9rem;
   line-height: 1.5;
+}
+
+.member-type-card__actions {
+  margin-top: auto;
 }
 
 .signup-actions {
@@ -1143,11 +1199,33 @@ body.signup-body {
   font-weight: 600;
 }
 
+.policy-box__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.policy-details {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
 .signup-panel .policy-box ul {
   margin: 0;
   padding-left: 1.2rem;
   color: var(--text-secondary);
   font-size: 0.9rem;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--primary-color);
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .signup-card .checkbox {
@@ -1234,12 +1312,13 @@ body.signup-body {
     padding: 1.75rem;
   }
 
-  .signup-header__inner {
+  .signup-header .header-inner {
     padding: 1rem 1.25rem;
   }
 
-  .signup-steps {
-    grid-template-columns: 1fr;
+  .signup-type-callout {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .signup-actions {
