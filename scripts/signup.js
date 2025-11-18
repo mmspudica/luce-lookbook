@@ -164,21 +164,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   const form = document.getElementById('signup-form');
-  const stepButtons = document.querySelectorAll('.signup-step');
-  const panels = document.querySelectorAll('[data-step-panel]');
-  const toStep2Button = document.getElementById('to-step-2');
-  const backToStep1 = document.getElementById('back-to-step-1');
   const feedbackEl = document.getElementById('signup-feedback');
-  const userTypeRadios = Array.from(document.querySelectorAll('input[name="user_type"]'));
   const businessFieldGroups = document.querySelectorAll('[data-extra="business"]');
   const channelFieldGroups = document.querySelectorAll('[data-extra="channels"]');
   const platformFieldGroups = document.querySelectorAll('[data-extra="platforms"]');
-  const memberTypeCards = document.querySelectorAll('.member-type-card');
   const termsConsent = document.getElementById('terms_consent');
   const selectedTypeHelp = document.getElementById('selected-type-help');
   const businessRegistrationInput = document.getElementById('business_registration_number');
   const phoneNumberInput = document.getElementById('phone_number');
-  let currentStep = 1;
+  const selectedTypeLabel = document.getElementById('selected-user-type-label');
+  const userTypeInput = document.getElementById('user_type');
+  const policyToggles = document.querySelectorAll('[data-toggle-policy]');
   let selectedUserType = null;
 
   if (businessRegistrationInput) {
@@ -259,25 +255,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   hideOptionalGroups();
 
-  function setStep(step) {
-    currentStep = step;
-    stepButtons.forEach((btn, index) => {
-      const stepNumber = index + 1;
-      btn.classList.toggle('is-active', stepNumber === step);
-      btn.setAttribute('aria-selected', String(stepNumber === step));
-      if (stepNumber <= step) {
-        btn.removeAttribute('disabled');
-      } else {
-        btn.setAttribute('disabled', 'true');
-      }
-    });
+  function applyUserTypeFromQuery() {
+    const params = new URLSearchParams(window.location.search);
+    const type = params.get('user_type')?.toLowerCase();
+    const validTypes = ['supplier', 'seller', 'member'];
 
-    panels.forEach(panel => {
-      const panelStep = Number(panel.dataset.stepPanel);
-      const isActive = panelStep === step;
-      panel.hidden = !isActive;
-      panel.setAttribute('aria-hidden', String(!isActive));
-    });
+    if (!type || !validTypes.includes(type)) {
+      window.location.replace('signupUserTypeSelect.html');
+      return null;
+    }
+
+    updateFormForUserType(type);
+    return type;
+  }
+
+  if (!applyUserTypeFromQuery()) {
+    return;
   }
 
   function updateTypeHelp(type) {
@@ -287,8 +280,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     selectedTypeHelp.dataset.copyKey = key;
   }
 
+  function updateTypeLabel(type) {
+    if (!selectedTypeLabel) return;
+    const key = `userType_${type}`;
+    selectedTypeLabel.textContent = translate(key);
+    selectedTypeLabel.dataset.copyKey = key;
+  }
+
   function updateFormForUserType(type) {
     selectedUserType = type;
+    if (userTypeInput) {
+      userTypeInput.value = type;
+    }
 
     const isSupplier = type === 'supplier';
     const isSeller = type === 'seller';
@@ -336,54 +339,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
 
+    updateTypeLabel(type);
     updateTypeHelp(type);
   }
-
-  stepButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const targetStep = Number(btn.dataset.step);
-      if (Number.isNaN(targetStep) || targetStep > currentStep) {
-        return;
-      }
-
-      if (targetStep === 2 && !selectedUserType) {
-        setFeedback('error', 'selectType');
-        return;
-      }
-
-      resetFeedback();
-      setStep(targetStep);
-    });
-  });
-
-  userTypeRadios.forEach(radio => {
-    radio.addEventListener('change', () => {
-      resetFeedback();
-      memberTypeCards.forEach(card => card.classList.remove('is-selected'));
-      const parentCard = radio.closest('.member-type-card');
-      if (parentCard) {
-        parentCard.classList.add('is-selected');
-      }
-      updateFormForUserType(radio.value);
-      toStep2Button.disabled = false;
-    });
-  });
-
-  toStep2Button.addEventListener('click', () => {
-    if (!selectedUserType) {
-      setFeedback('error', 'selectType');
-      return;
-    }
-
-    resetFeedback();
-    setStep(2);
-    document.getElementById('full_name')?.focus();
-  });
-
-  backToStep1.addEventListener('click', () => {
-    resetFeedback();
-    setStep(1);
-  });
 
   function getSelectedPlatforms() {
     return Array.from(form.querySelectorAll('input[name="main_platforms"]:checked'))
@@ -391,12 +349,30 @@ document.addEventListener('DOMContentLoaded', async () => {
       .filter(Boolean);
   }
 
+  policyToggles.forEach(button => {
+    button.addEventListener('click', () => {
+      const targetId = button.dataset.togglePolicy;
+      const target = document.getElementById(targetId);
+      if (!target) return;
+
+      const shouldShow = target.hasAttribute('hidden');
+      if (shouldShow) {
+        target.removeAttribute('hidden');
+        button.textContent = '[닫기]';
+      } else {
+        target.setAttribute('hidden', '');
+        button.textContent = '[보기]';
+      }
+    });
+  });
+
   document.addEventListener('luce:language-changed', () => {
     if (feedbackEl.dataset.copyKey) {
       feedbackEl.textContent = translate(feedbackEl.dataset.copyKey);
     }
 
     if (selectedUserType) {
+      updateTypeLabel(selectedUserType);
       updateTypeHelp(selectedUserType);
     }
   });
@@ -407,7 +383,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (!selectedUserType) {
       setFeedback('error', 'selectType');
-      setStep(1);
       return;
     }
 

@@ -364,7 +364,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   navLinks.forEach(link => {
     link.addEventListener('click', event => {
-      if (link.getAttribute('href') === 'admin.html' || link.getAttribute('href') === 'signup.html') {
+      if (link.getAttribute('href') === 'admin.html' || link.getAttribute('href')?.startsWith('signup')) {
         return;
       }
 
