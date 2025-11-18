@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>회원 유형 선택 - LUCE</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles/style.css?v=1.0.1">
+</head>
+<body class="signup-body">
+  <header class="site-header signup-header">
+    <div class="container header-inner">
+      <a class="logo" href="/">
+        <img src="assets/luce_logo_main.png" alt="LUCE" />
+        <span class="logo__text">LUCE LOOKBOOK</span>
+      </a>
+      <div class="header-actions">
+        <nav class="lang-switcher" aria-label="언어 선택">
+          <button data-lang="ko" class="active">한글</button>
+          <span>/</span>
+          <button data-lang="en">ENG</button>
+          <span>/</span>
+          <button data-lang="zh">中文</button>
+        </nav>
+        <a class="btn ghost" href="index.html" data-i18n-key="signup_back_home">메인으로</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="signup-main">
+    <section class="signup-card" aria-labelledby="signup-select-title">
+      <header class="signup-card__header">
+        <p class="tag" data-i18n-key="signup_tag">SIGN UP</p>
+        <h1 id="signup-select-title" data-i18n-key="signup_title">회원 유형을 선택하세요</h1>
+        <p class="signup-card__subtitle" data-i18n-key="signup_subtitle">가입 후에도 프로필에서 회원 유형을 변경할 수 있습니다.</p>
+      </header>
+
+      <div class="member-type-grid" role="list" aria-label="회원 유형">
+        <article class="member-type-card" tabindex="0" role="button" data-user-type="supplier">
+          <span class="member-type-card__badge" data-i18n-key="signup_type_supplier_badge">공급업체</span>
+          <span class="member-type-card__title" data-i18n-key="signup_type_supplier_title">상품을 공급하고 싶은 파트너</span>
+          <span class="member-type-card__description" data-i18n-key="signup_type_supplier_desc">사업자등록증과 주요 판매 채널 정보를 등록해 주세요.</span>
+          <div class="member-type-card__actions">
+            <button class="btn primary" type="button">공급업체로 가입</button>
+          </div>
+        </article>
+
+        <article class="member-type-card" tabindex="0" role="button" data-user-type="seller">
+          <span class="member-type-card__badge" data-i18n-key="signup_type_seller_badge">셀러</span>
+          <span class="member-type-card__title" data-i18n-key="signup_type_seller_title">라이브 커머스를 진행하는 셀러</span>
+          <span class="member-type-card__description" data-i18n-key="signup_type_seller_desc">연락 가능한 정보를 입력하고, 운영 중인 채널을 알려주세요.</span>
+          <div class="member-type-card__actions">
+            <button class="btn primary" type="button">셀러로 가입</button>
+          </div>
+        </article>
+
+        <article class="member-type-card" tabindex="0" role="button" data-user-type="member">
+          <span class="member-type-card__badge" data-i18n-key="signup_type_member_badge">일반회원</span>
+          <span class="member-type-card__title" data-i18n-key="signup_type_member_title">룩북 소식을 받아보고 싶은 회원</span>
+          <span class="member-type-card__description" data-i18n-key="signup_type_member_desc">기본 연락처만 입력하면 가입할 수 있습니다.</span>
+          <div class="member-type-card__actions">
+            <button class="btn primary" type="button">일반회원으로 가입</button>
+          </div>
+        </article>
+      </div>
+
+      <p class="signup-feedback" id="select-feedback" role="status" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <script src="scripts/i18n.js" defer></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (window.luceI18n?.init) {
+        await window.luceI18n.init({ root: document, langSwitcherSelector: '.lang-switcher' });
+      }
+
+      const cards = document.querySelectorAll('[data-user-type]');
+      const feedback = document.getElementById('select-feedback');
+
+      function navigateToSignup(type) {
+        if (!type) return;
+        window.location.href = `signup.html?user_type=${encodeURIComponent(type)}`;
+      }
+
+      cards.forEach(card => {
+        const type = card.dataset.userType;
+        card.addEventListener('click', () => navigateToSignup(type));
+        card.addEventListener('keypress', event => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            navigateToSignup(type);
+          }
+        });
+
+        const button = card.querySelector('button');
+        if (button) {
+          button.addEventListener('click', event => {
+            event.stopPropagation();
+            navigateToSignup(type);
+          });
+        }
+      });
+
+      if (feedback) {
+        feedback.textContent = '가입 유형을 선택하면 다음 단계로 이동합니다.';
+      }
+    });
+  </script>
+</body>
+</html>
