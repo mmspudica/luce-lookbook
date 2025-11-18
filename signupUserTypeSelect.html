@@ -82,6 +82,11 @@
 
       function navigateToSignup(type) {
         if (!type) return;
+        try {
+          sessionStorage.setItem('luceSelectedUserType', type);
+        } catch (storageError) {
+          console.warn('유형 저장에 실패했습니다.', storageError);
+        }
         window.location.href = `signup.html?user_type=${encodeURIComponent(type)}`;
       }
 
