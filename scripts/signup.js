@@ -175,6 +175,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const selectedTypeLabel = document.getElementById('selected-user-type-label');
   const userTypeInput = document.getElementById('user_type');
   const policyToggles = document.querySelectorAll('[data-toggle-policy]');
+  const validUserTypes = ['supplier', 'seller', 'member'];
   let selectedUserType = null;
 
   if (businessRegistrationInput) {
@@ -255,23 +256,42 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   hideOptionalGroups();
 
-  function applyUserTypeFromQuery() {
+  function resolveUserType() {
     const params = new URLSearchParams(window.location.search);
-    const type = params.get('user_type')?.toLowerCase();
-    const validTypes = ['supplier', 'seller', 'member'];
+    const typeFromQuery = params.get('user_type')?.toLowerCase();
+    let typeFromStorage = null;
 
-    if (!type || !validTypes.includes(type)) {
-      window.location.replace('signupUserTypeSelect.html');
+    try {
+      typeFromStorage = sessionStorage.getItem('luceSelectedUserType')?.toLowerCase() || null;
+    } catch (storageError) {
+      console.warn('선택한 회원 유형을 불러오지 못했습니다.', storageError);
+    }
+
+    const resolvedType = [typeFromQuery, typeFromStorage].find(
+      type => type && validUserTypes.includes(type)
+    );
+
+    if (!resolvedType) {
       return null;
     }
 
-    updateFormForUserType(type);
-    return type;
+    if (!typeFromQuery) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('user_type', resolvedType);
+      window.history.replaceState({}, '', url.toString());
+    }
+
+    return resolvedType;
   }
 
-  if (!applyUserTypeFromQuery()) {
+  const initialUserType = resolveUserType();
+
+  if (!initialUserType) {
+    window.location.replace('signupUserTypeSelect.html');
     return;
   }
+
+  updateFormForUserType(initialUserType);
 
   function updateTypeHelp(type) {
     if (!selectedTypeHelp) return;
