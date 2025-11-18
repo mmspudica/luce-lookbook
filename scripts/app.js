@@ -56,6 +56,7 @@ const localeMap = {
 
 document.addEventListener('DOMContentLoaded', async () => {
   const grid = document.getElementById('lookbook-grid');
+  const lookbookLoader = document.getElementById('lookbook-loader');
   const metricProducts = document.getElementById('metric-products');
   const metricSuppliers = document.getElementById('metric-suppliers');
   const metricSellers = document.getElementById('metric-sellers');
@@ -166,7 +167,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>
         <div class="look-card__body">
           <h3 class="look-card__title">${item.title}</h3>
-          <p class="look-card__supplier">${item.supplier}</p>
+          <p class="look-card__supplier">${priceLabel}</p>
         </div>
       `;
       grid.appendChild(card);
@@ -401,3 +402,91 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateMetricsFromProfiles(cachedProfiles);
   });
 });
+
+function normalizeLookbookItems(items = []) {
+  return items
+    .map((item, index) => {
+      if (!item) {
+        return null;
+      }
+
+      const imageUrl =
+        item.image_url ||
+        item.imageUrl ||
+        item.image ||
+        item.thumbnail_url ||
+        item.thumbnail ||
+        item.url ||
+        '';
+
+      if (!imageUrl) {
+        return null;
+      }
+
+      const metadata = parseMetadataFromImageUrl(imageUrl);
+      const rawTitle = item.title || item.name || metadata.title || `LOOK ${index + 1}`;
+
+      const rawPrice =
+        item.price_label ||
+        item.priceLabel ||
+        item.display_price ||
+        item.price_text ||
+        item.price ||
+        metadata.priceLabel ||
+        '';
+
+      let formattedPrice = '';
+      if (!rawPrice) {
+        const numericPrice = typeof item.price === 'number'
+          ? item.price
+          : Number.parseInt(String(item.price ?? item.price_krw ?? ''), 10);
+
+        if (Number.isFinite(numericPrice) && numericPrice > 0) {
+          formattedPrice = `₩${numericPrice.toLocaleString('ko-KR')}`;
+        }
+      }
+
+      const priceLabel = rawPrice || formattedPrice;
+      const supplierLabel = item.supplier || item.brand || item.vendor || priceLabel;
+      const category = item.category || item.type || item.segment || 'fashion';
+
+      return {
+        ...item,
+        id: item.id ?? index + 1,
+        title: String(rawTitle).trim(),
+        supplier: supplierLabel,
+        price: priceLabel,
+        category,
+        imageUrl
+      };
+    })
+    .filter(Boolean);
+}
+
+function parseMetadataFromImageUrl(imageUrl) {
+  if (!imageUrl) {
+    return { title: '', priceLabel: '' };
+  }
+
+  const filename = decodeURIComponent(imageUrl.split('/').pop() || '').trim();
+  if (!filename) {
+    return { title: '', priceLabel: '' };
+  }
+
+  const nameWithoutExtension = filename.replace(/\.[^.]+$/, '');
+  const parts = nameWithoutExtension.split(/\s+/).filter(Boolean);
+
+  if (parts.length === 0) {
+    return { title: '', priceLabel: '' };
+  }
+
+  const lastPart = parts[parts.length - 1];
+  const numericPrice = Number(lastPart.replace(/[^\d]/g, ''));
+  const hasValidPrice = Number.isFinite(numericPrice) && numericPrice > 0;
+
+  const titleParts = hasValidPrice ? parts.slice(0, -1) : parts;
+  const title = titleParts.join(' ').trim();
+  const priceLabel = hasValidPrice ? `₩${numericPrice.toLocaleString('ko-KR')}` : '';
+
+  return { title, priceLabel };
+}

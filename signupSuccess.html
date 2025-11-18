@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LUCE 가입 완료</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles/style.css?v=1.0.1">
+</head>
+<body class="signup-body">
+  <header class="signup-header">
+    <div class="signup-header__inner">
+      <a class="logo" href="/">
+        <img src="assets/luce_logo_main.png" alt="LUCE" />
+        <span class="logo__text">LUCE LOOKBOOK</span>
+      </a>
+      <div class="header-actions">
+        <nav class="lang-switcher" aria-label="언어 선택">
+          <button data-lang="ko" class="active">한글</button>
+          <span>/</span>
+          <button data-lang="en">ENG</button>
+          <span>/</span>
+          <button data-lang="zh">中文</button>
+        </nav>
+        <a class="btn ghost" href="index.html" data-i18n-key="signup_back_home">메인으로</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="signup-main">
+    <section class="signup-card" aria-labelledby="signup-success-title">
+      <header class="signup-card__header">
+        <p class="tag" data-i18n-key="signup_tag">SIGN UP</p>
+        <h1 id="signup-success-title" data-i18n-key="signup_complete_title">가입 신청이 완료되었습니다.</h1>
+        <p class="signup-card__subtitle" data-i18n-key="signup_complete_message">LUCE LOOKBOOK 가입이 완료되었습니다. 곧 담당자가 안내를 드릴 예정입니다.</p>
+      </header>
+
+      <div class="signup-complete__preview" id="signup-preview" aria-live="polite">
+        <p id="signup-preview-empty" class="signup-preview__empty" data-i18n-key="signup_preview_empty" hidden>최근 제출한 신청 정보를 찾을 수 없습니다.</p>
+      </div>
+
+      <div class="signup-actions">
+        <a class="btn primary" href="index.html" data-i18n-key="signup_complete_home">메인으로 돌아가기</a>
+      </div>
+    </section>
+  </main>
+
+  <script src="scripts/i18n.js" defer></script>
+  <script src="scripts/signupSuccess.js" defer></script>
+</body>
+</html>

@@ -39,12 +39,29 @@
           <span>/</span>
           <button data-lang="zh">中文</button>
         </nav>
-        <a class="btn ghost" href="signup.html" data-i18n-key="signup">회원가입</a>
+        <a class="btn ghost" href="signupUserTypeSelect.html" data-i18n-key="signup">회원가입</a>
       </div>
     </div>
   </header>
 
   <main>
+    <section class="hero-media" aria-labelledby="hero-media-title">
+      <div class="container hero-media__inner">
+        <div class="hero-media__text">
+          <p class="tag">LOOKBOOK FEATURE</p>
+          <h1 id="hero-media-title">블루 체크 코트 LP0033</h1>
+          <p class="hero-media__price">가격 48,000원</p>
+          <p class="hero-media__description">룩북에 새로 추가된 블루 체크 코트 LP0033 영상을 확인해 보세요.</p>
+        </div>
+        <div class="hero-media__player">
+          <video controls playsinline muted loop poster="" aria-label="블루 체크 코트 LP0033 영상">
+            <source src="assets/LP0033.mp4" type="video/mp4">
+            현재 브라우저에서는 동영상을 재생할 수 없습니다.
+          </video>
+        </div>
+      </div>
+    </section>
+
     <!-- 1. 룩북 섹션 -->
     <section id="lookbook" class="lookbook spotlight" data-view-section="lookbook">
       <div class="container">
@@ -73,17 +90,17 @@
           <article class="metric-card">
             <p class="metric-label" data-i18n-key="metric_suppliers">공급업체</p>
             <p class="metric-value" id="metric-suppliers">0</p>
-            <p class="metric-caption" data-i18n-key="metric_suppliers_caption">라이브 준비 완료</p>
+            <p class="metric-caption" data-i18n-key="metric_suppliers_caption">제품 공급 중</p>
           </article>
           <article class="metric-card">
             <p class="metric-label" data-i18n-key="metric_sellers">셀러 풀</p>
             <p class="metric-value" id="metric-sellers">0</p>
-            <p class="metric-caption" data-i18n-key="metric_sellers_caption">셀렉션 대기</p>
+            <p class="metric-caption" data-i18n-key="metric_sellers_caption">셀렉션 대기 중</p>
           </article>
           <article class="metric-card">
             <p class="metric-label" data-i18n-key="metric_members">일반회원</p>
             <p class="metric-value" id="metric-members">0</p>
-            <p class="metric-caption" data-i18n-key="metric_members_caption">소식 구독</p>
+            <p class="metric-caption" data-i18n-key="metric_members_caption">소식 구독 중</p>
           </article>
           <p class="metric-error" id="metric-error" role="status" aria-live="polite" hidden data-i18n-key="metric_error">지표를 불러오지 못했습니다.</p>
         </div>
@@ -253,14 +270,14 @@
     <div class="container footer-inner">
       <div>
         <div class="logo">
-          <img src="assets/luce-logo.svg" alt="LUCE" onerror="this.style.display='none'" />
+          <img src="assets/luce_logo_main.png" alt="LUCE" />
           <span class="logo__text">LUCE LOOKBOOK</span>
         </div>
         <p data-i18n-key="footer_subtitle">동대문 라이브커머스를 위한 준비 도구. 고른다 → 준비한다 → 방송한다.</p>
       </div>
       <div class="footer-meta">
-        <p data-i18n-key="footer_contact">문의: luce@lookbook.app · 02-000-0000</p>
-        <p data-i18n-key="footer_copyright">© 2025 LUCE Commerce Studio. All rights reserved.</p>
+        <p data-i18n-key="footer_contact">문의: admin@luce.app</p>
+        <p data-i18n-key="footer_copyright">© 2025 DSY International. All rights reserved.</p>
       </div>
     </div>
   </footer>

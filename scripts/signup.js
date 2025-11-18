@@ -137,10 +137,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   const form = document.getElementById('signup-form');
-  const stepButtons = document.querySelectorAll('.signup-step');
-  const panels = document.querySelectorAll('[data-step-panel]');
-  const toStep2Button = document.getElementById('to-step-2');
-  const backToStep1 = document.getElementById('back-to-step-1');
   const feedbackEl = document.getElementById('signup-feedback');
   const userTypeRadios = Array.from(document.querySelectorAll('input[name="user_type"]'));
   const businessFieldGroups = document.querySelectorAll('[data-extra="business"]');
@@ -149,9 +145,36 @@ document.addEventListener('DOMContentLoaded', async () => {
   const memberTypeCards = document.querySelectorAll('.member-type-card');
   const termsConsent = document.getElementById('terms_consent');
   const selectedTypeHelp = document.getElementById('selected-type-help');
-
-  let currentStep = 1;
+  const businessRegistrationInput = document.getElementById('business_registration_number');
+  const phoneNumberInput = document.getElementById('phone_number');
+  const selectedTypeLabel = document.getElementById('selected-user-type-label');
+  const userTypeInput = document.getElementById('user_type');
+  const policyToggles = document.querySelectorAll('[data-toggle-policy]');
   let selectedUserType = null;
+
+  if (businessRegistrationInput) {
+    businessRegistrationInput.addEventListener('input', () => {
+      const formatted = formatBusinessRegistrationNumber(businessRegistrationInput.value);
+      businessRegistrationInput.value = formatted;
+    });
+
+    businessRegistrationInput.addEventListener('blur', () => {
+      const formatted = formatBusinessRegistrationNumber(businessRegistrationInput.value);
+      businessRegistrationInput.value = formatted;
+    });
+  }
+
+  if (phoneNumberInput) {
+    phoneNumberInput.addEventListener('input', () => {
+      const formatted = formatPhoneNumber(phoneNumberInput.value);
+      phoneNumberInput.value = formatted;
+    });
+
+    phoneNumberInput.addEventListener('blur', () => {
+      const formatted = formatPhoneNumber(phoneNumberInput.value);
+      phoneNumberInput.value = formatted;
+    });
+  }
 
   function resetFeedback() {
     feedbackEl.textContent = '';
@@ -207,25 +230,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   hideOptionalGroups();
 
-  function setStep(step) {
-    currentStep = step;
-    stepButtons.forEach((btn, index) => {
-      const stepNumber = index + 1;
-      btn.classList.toggle('is-active', stepNumber === step);
-      btn.setAttribute('aria-selected', String(stepNumber === step));
-      if (stepNumber <= step) {
-        btn.removeAttribute('disabled');
-      } else {
-        btn.setAttribute('disabled', 'true');
-      }
-    });
+  function applyUserTypeFromQuery() {
+    const params = new URLSearchParams(window.location.search);
+    const type = params.get('user_type')?.toLowerCase();
+    const validTypes = ['supplier', 'seller', 'member'];
 
-    panels.forEach(panel => {
-      const panelStep = Number(panel.dataset.stepPanel);
-      const isActive = panelStep === step;
-      panel.hidden = !isActive;
-      panel.setAttribute('aria-hidden', String(!isActive));
-    });
+    if (!type || !validTypes.includes(type)) {
+      window.location.replace('signupUserTypeSelect.html');
+      return null;
+    }
+
+    updateFormForUserType(type);
+    return type;
   }
 
   function updateTypeHelp(type) {
@@ -237,6 +253,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function updateFormForUserType(type) {
     selectedUserType = type;
+    if (userTypeInput) {
+      userTypeInput.value = type;
+    }
 
     const isSupplier = type === 'supplier';
     const isSeller = type === 'seller';
@@ -313,8 +332,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (parentCard) {
         parentCard.classList.add('is-selected');
       }
-      updateFormForUserType(radio.value);
-      toStep2Button.disabled = false;
     });
   });
 
@@ -454,7 +471,25 @@ document.addEventListener('DOMContentLoaded', async () => {
       const { error: profileError } = await supabaseClient.from(profileTable).insert(profilePayload);
 
       if (profileError) {
-        throw profileError;
+        const isDuplicateKey =
+          profileError.code === '23505' ||
+          profileError.message?.includes('duplicate key value violates unique constraint "profiles_pkey"');
+
+        if (isDuplicateKey) {
+          const updatePayload = { ...profilePayload };
+          delete updatePayload.id;
+
+          const { error: updateError } = await supabaseClient
+            .from('profiles')
+            .update(updatePayload)
+            .eq('id', userId);
+
+          if (updateError) {
+            throw updateError;
+          }
+        } else {
+          throw profileError;
+        }
       }
 
       setFeedback('success', 'signupSuccess');

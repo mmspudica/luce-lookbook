@@ -83,11 +83,11 @@
   "metric_products": "Registered Looks",
   "metric_updated": "Last updated",
   "metric_suppliers": "Suppliers",
-  "metric_suppliers_caption": "Ready for Live",
+  "metric_suppliers_caption": "Supplying Products",
   "metric_sellers": "Seller Pool",
-  "metric_sellers_caption": "Pending Selection",
+  "metric_sellers_caption": "Awaiting Selection",
   "metric_members": "Members",
-  "metric_members_caption": "Subscribed",
+  "metric_members_caption": "Subscribed to Updates",
   "metric_error": "Failed to load metrics.",
   "lookbook_loader": "Loading next looks...",
   "selection_title": "Selection Cart",
@@ -127,6 +127,6 @@
   "checklist_card3_li3": "Apply conditions exactly as announced during live",
   "checklist_card3_li4": "Share document records within 48 hours",
   "footer_subtitle": "The prep tool for Dongdaemun Live Commerce. Select → Prep → Broadcast.",
-  "footer_contact": "Contact: luce@lookbook.app · +82-2-000-0000",
-  "footer_copyright": "© 2025 LUCE Commerce Studio. All rights reserved."
+  "footer_contact": "Contact: admin@luce.app",
+  "footer_copyright": "© 2025 DSY International. All rights reserved."
 }
