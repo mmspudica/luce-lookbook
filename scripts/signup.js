@@ -28,7 +28,9 @@ const copy = {
     previewMarketingNo: '미동의',
     userType_supplier: '공급업체',
     userType_seller: '셀러',
-    userType_member: '일반회원'
+    userType_member: '일반회원',
+    policyShow: '[보기]',
+    policyHide: '[닫기]'
   },
   en: {
     selectType: 'Please choose your membership type.',
@@ -57,7 +59,9 @@ const copy = {
     previewMarketingNo: 'Declined',
     userType_supplier: 'Supplier',
     userType_seller: 'Seller',
-    userType_member: 'Member'
+    userType_member: 'Member',
+    policyShow: '[View]',
+    policyHide: '[Hide]'
   },
   zh: {
     selectType: '请选择会员类型。',
@@ -86,7 +90,9 @@ const copy = {
     previewMarketingNo: '不同意',
     userType_supplier: '供应商',
     userType_seller: '卖家',
-    userType_member: '普通会员'
+    userType_member: '普通会员',
+    policyShow: '[查看]',
+    policyHide: '[收起]'
   }
 };
 
@@ -177,6 +183,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   const policyToggles = document.querySelectorAll('[data-toggle-policy]');
   const validUserTypes = ['supplier', 'seller', 'member'];
   let selectedUserType = null;
+
+  function setPolicyButtonLabel(button, isExpanded) {
+    if (!button) return;
+    const key = isExpanded ? 'policyHide' : 'policyShow';
+    button.textContent = translate(key);
+    button.dataset.copyKey = key;
+  }
 
   if (businessRegistrationInput) {
     businessRegistrationInput.addEventListener('input', () => {
@@ -370,19 +383,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   policyToggles.forEach(button => {
+    const targetId = button.dataset.togglePolicy;
+    const target = targetId ? document.getElementById(targetId) : null;
+    setPolicyButtonLabel(button, target ? !target.hasAttribute('hidden') : false);
+
     button.addEventListener('click', () => {
-      const targetId = button.dataset.togglePolicy;
-      const target = document.getElementById(targetId);
       if (!target) return;
 
       const shouldShow = target.hasAttribute('hidden');
       if (shouldShow) {
         target.removeAttribute('hidden');
-        button.textContent = '[닫기]';
       } else {
         target.setAttribute('hidden', '');
-        button.textContent = '[보기]';
       }
+
+      setPolicyButtonLabel(button, shouldShow);
     });
   });
 
@@ -395,6 +410,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       updateTypeLabel(selectedUserType);
       updateTypeHelp(selectedUserType);
     }
+
+    policyToggles.forEach(button => {
+      const targetId = button.dataset.togglePolicy;
+      const target = targetId ? document.getElementById(targetId) : null;
+      setPolicyButtonLabel(button, target ? !target.hasAttribute('hidden') : false);
+    });
   });
 
   async function handleSubmit(event) {

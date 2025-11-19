@@ -125,6 +125,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
+  document.addEventListener('luce:language-changed', handleLanguageChanged);
+
   if (window.luceI18n?.init) {
     await window.luceI18n.init({ root: document, langSwitcherSelector: '.lang-switcher' });
   }
@@ -134,6 +136,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   let cachedLatestCreatedAt = null;
   let lastMetricsError = false;
   let lastFocusedElement = null;
+  let activeFilter = 'all';
+  let activeModalItem = null;
+  let activeTranslations = null;
+
+  function handleLanguageChanged(event) {
+    if (event?.detail?.translations) {
+      activeTranslations = event.detail.translations;
+    }
+
+    updateMetrics();
+    renderActiveFilter();
+
+    if (activeModalItem && lookModal?.getAttribute('aria-hidden') === 'false') {
+      renderLookModalContent(activeModalItem);
+    }
+  }
 
   function setLookbookLoading(isLoading) {
     if (!lookbookLoader) {
@@ -172,13 +190,42 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+  function t(key, fallback = '') {
+    if (activeTranslations && key && key in activeTranslations) {
+      return activeTranslations[key];
+    }
+    return fallback || key || '';
+  }
+
+  function getLookTitle(item) {
+    if (!item) {
+      return '';
+    }
+
+    const lang = getLang();
+    const titleTranslations = item.title_i18n || item.titleTranslations || item.translations?.title || item.translations;
+
+    if (titleTranslations && typeof titleTranslations === 'object') {
+      return (
+        titleTranslations[lang] ||
+        titleTranslations.ko ||
+        titleTranslations.en ||
+        titleTranslations.zh ||
+        item.title ||
+        ''
+      );
+    }
+
+    return item.title || '';
+  }
+
   function renderGrid(items) {
     if (!grid) {
       return;
     }
 
     if (!items || items.length === 0) {
-      grid.innerHTML = '<p>현재 표시할 룩이 없습니다.</p>';
+      grid.innerHTML = `<p>${t('lookbook_empty', '현재 표시할 룩이 없습니다.')}</p>`;
       return;
     }
 
@@ -190,14 +237,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const imageSrc = encodeURI(item.imageUrl);
       const priceLabel = item.price || item.supplier || '';
+      const displayTitle = getLookTitle(item);
 
       card.innerHTML = `
         <div class="look-card__image-wrapper">
-          <img src="${imageSrc}" alt="${item.title}" class="look-card__image" loading="lazy"
+          <img src="${imageSrc}" alt="${displayTitle}" class="look-card__image" loading="lazy"
                onerror="this.src='https://placehold.co/600x800/EEE/333?text=Image+Not+Found'; this.classList.add('error');">
         </div>
         <div class="look-card__body">
-          <h3 class="look-card__title">${item.title}</h3>
+          <h3 class="look-card__title">${displayTitle}</h3>
           <p class="look-card__supplier">${priceLabel}</p>
         </div>
       `;
@@ -207,34 +255,50 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  function openLookModal(item) {
-    if (!lookModal || !lookModalMedia || !lookModalBody) {
+  function renderLookModalContent(item, options = {}) {
+    if (!item || !lookModal || !lookModalMedia || !lookModalBody) {
       return;
     }
 
+    const { shouldFocusClose = false } = options;
     const videoSrc = encodeURI(item.videoUrl || deriveVideoUrlFromImage(item.imageUrl) || '');
-    lastFocusedElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const fallbackText = t('look_modal_video_error', '현재 브라우저에서는 동영상을 재생할 수 없습니다.');
+    const placeholderText = t('look_modal_video_placeholder', '재생할 영상을 찾을 수 없습니다.');
+    const displayTitle = getLookTitle(item);
 
     if (videoSrc) {
       lookModalMedia.innerHTML = `
         <video controls autoplay playsinline preload="metadata">
           <source src="${videoSrc}" type="video/mp4">
-          현재 브라우저에서는 동영상을 재생할 수 없습니다.
+          ${fallbackText}
         </video>
       `;
     } else {
-      lookModalMedia.innerHTML = '<div class="look-modal__placeholder">재생할 영상을 찾을 수 없습니다.</div>';
+      lookModalMedia.innerHTML = `<div class="look-modal__placeholder">${placeholderText}</div>`;
     }
 
     lookModalBody.innerHTML = `
-      <h2 id="look-modal-title">${item.title}</h2>
+      <h2 id="look-modal-title">${displayTitle}</h2>
       ${item.price ? `<p class="look-modal__price">${item.price}</p>` : ''}
       ${item.supplier ? `<p class="look-modal__supplier">${item.supplier}</p>` : ''}
     `;
 
+    if (shouldFocusClose) {
+      lookModal.querySelector('.look-modal__close')?.focus();
+    }
+  }
+
+  function openLookModal(item) {
+    if (!lookModal || !lookModalMedia || !lookModalBody) {
+      return;
+    }
+
+    lastFocusedElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    activeModalItem = item;
+    renderLookModalContent(item, { shouldFocusClose: true });
+
     lookModal.setAttribute('aria-hidden', 'false');
     document.body.classList.add('modal-open');
-    lookModal.querySelector('.look-modal__close')?.focus();
     document.addEventListener('keydown', handleModalKeydown);
   }
 
@@ -247,6 +311,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.body.classList.remove('modal-open');
     lookModalMedia.innerHTML = '';
     lookModalBody.innerHTML = '';
+    activeModalItem = null;
     document.removeEventListener('keydown', handleModalKeydown);
 
     if (lastFocusedElement) {
@@ -392,10 +457,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (Array.isArray(data) && data.length > 0) {
         allData = normalizeLookbookItems(data);
-        renderGrid(allData);
+        renderActiveFilter();
         updateMetrics();
       } else if (allData.length === 0) {
-        grid.innerHTML = '<p>등록된 룩이 없습니다.</p>';
+        grid.innerHTML = `<p>${t('lookbook_empty', '등록된 룩이 없습니다.')}</p>`;
       }
     } catch (error) {
       console.error('룩북 데이터를 불러오지 못했습니다:', error);
@@ -407,19 +472,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+  function renderActiveFilter() {
+    if (activeFilter === 'all') {
+      renderGrid(allData);
+      return;
+    }
+
+    const filteredData = allData.filter(item => item.category === activeFilter);
+    renderGrid(filteredData);
+  }
+
   filterButtons.forEach(button => {
     button.addEventListener('click', () => {
       filterButtons.forEach(btn => btn.classList.remove('active'));
       button.classList.add('active');
 
       const filter = button.dataset.filter;
-
-      if (filter === 'all') {
-        renderGrid(allData);
-      } else {
-        const filteredData = allData.filter(item => item.category === filter);
-        renderGrid(filteredData);
-      }
+      activeFilter = filter || 'all';
+      renderActiveFilter();
     });
   });
 
@@ -444,7 +514,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   if (allData.length > 0) {
-    renderGrid(allData);
+    renderActiveFilter();
     setLookbookLoading(false);
   } else {
     setLookbookLoading(true);
@@ -456,10 +526,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('lookbook')?.setAttribute('aria-hidden', 'false');
   document.querySelector('.main-nav a[data-view-target="lookbook"]')?.classList.add('active');
-
-  document.addEventListener('luce:language-changed', () => {
-    updateMetrics();
-  });
 
   modalCloseTriggers.forEach(trigger => {
     trigger.addEventListener('click', () => {
@@ -490,6 +556,7 @@ function normalizeLookbookItems(items = []) {
 
       const metadata = parseMetadataFromImageUrl(imageUrl);
       const rawTitle = item.title || item.name || metadata.title || `LOOK ${index + 1}`;
+      const normalizedTitle = String(rawTitle).trim();
 
       const rawPrice =
         item.price_label ||
@@ -516,10 +583,16 @@ function normalizeLookbookItems(items = []) {
       const category = item.category || item.type || item.segment || 'fashion';
       const videoUrl = item.video_url || item.videoUrl || item.video || deriveVideoUrlFromImage(imageUrl);
 
+      const titleTranslations = normalizeTitleTranslations(
+        item.title_i18n || item.titleTranslations || item.translations?.title,
+        normalizedTitle
+      );
+
       return {
         ...item,
         id: item.id ?? index + 1,
-        title: String(rawTitle).trim(),
+        title: normalizedTitle,
+        title_i18n: titleTranslations,
         supplier: supplierLabel,
         price: priceLabel,
         category,
@@ -528,6 +601,33 @@ function normalizeLookbookItems(items = []) {
       };
     })
     .filter(Boolean);
+}
+
+function normalizeTitleTranslations(translations, fallbackTitle) {
+  if (!translations || typeof translations !== 'object') {
+    if (!fallbackTitle) {
+      return null;
+    }
+
+    return {
+      ko: fallbackTitle,
+      en: fallbackTitle,
+      zh: fallbackTitle
+    };
+  }
+
+  const normalized = { ...translations };
+  if (fallbackTitle && !normalized.ko) {
+    normalized.ko = fallbackTitle;
+  }
+  if (!normalized.en) {
+    normalized.en = normalized.ko || fallbackTitle;
+  }
+  if (!normalized.zh) {
+    normalized.zh = normalized.en || normalized.ko || fallbackTitle;
+  }
+
+  return normalized;
 }
 
 function parseMetadataFromImageUrl(imageUrl) {

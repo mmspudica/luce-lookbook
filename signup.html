@@ -39,11 +39,11 @@
 
       <section class="signup-type-callout" aria-live="polite">
         <div>
-          <p class="tag tag--muted">선택한 회원 유형</p>
-          <h2 id="selected-user-type-label">회원 유형을 불러오는 중...</h2>
-          <p class="signup-card__subtitle" id="selected-type-help">회원 유형에 맞춘 필수 항목을 불러옵니다.</p>
+          <p class="tag tag--muted" data-i18n-key="signup_selected_type_label">선택한 회원 유형</p>
+          <h2 id="selected-user-type-label" data-i18n-key="signup_selected_type_loading">회원 유형을 불러오는 중...</h2>
+          <p class="signup-card__subtitle" id="selected-type-help" data-i18n-key="signup_selected_type_help">회원 유형에 맞춘 필수 항목을 불러옵니다.</p>
         </div>
-        <a class="btn ghost" href="signupUserTypeSelect.html">다시 선택</a>
+        <a class="btn ghost" href="signupUserTypeSelect.html" data-i18n-key="signup_change_type">다시 선택</a>
       </section>
 
       <form id="signup-form" novalidate>
@@ -130,16 +130,16 @@
           <div class="policy-box" role="region" aria-label="개인정보 처리방침">
             <div class="policy-box__header">
               <h3 data-i18n-key="signup_terms_required_title">개인정보 수집 및 이용 동의 (필수)</h3>
-              <button type="button" class="link-button" data-toggle-policy="privacy-policy">[보기]</button>
+              <button type="button" class="link-button" data-toggle-policy="privacy-policy" data-policy-button="privacy">[보기]</button>
             </div>
             <div class="policy-details" id="privacy-policy" hidden>
-              <p>㈜루체는 회원 가입 및 서비스 제공을 위해 아래의 개인정보를 수집·이용합니다.</p>
+              <p data-i18n-key="signup_terms_intro">㈜루체는 회원 가입 및 서비스 제공을 위해 아래의 개인정보를 수집·이용합니다.</p>
               <ul>
-                <li>수집 항목: 이름, 이메일, 비밀번호, 연락처, 선택적으로 회사명 및 채널 정보</li>
-                <li>이용 목적: 서비스 제공, 회원 식별, 고객 상담, 파트너 매칭, 법적 의무 준수</li>
-                <li>보유 기간: 회원 탈퇴 후 3년간 보관하며, 관련 법령에 따라 필요한 경우 추가로 보관할 수 있습니다.</li>
+                <li data-i18n-key="signup_terms_item1">수집 항목: 이름, 이메일, 비밀번호, 연락처, 선택적으로 회사명 및 채널 정보</li>
+                <li data-i18n-key="signup_terms_item2">이용 목적: 서비스 제공, 회원 식별, 고객 상담, 파트너 매칭, 법적 의무 준수</li>
+                <li data-i18n-key="signup_terms_item3">보유 기간: 회원 탈퇴 후 3년간 보관하며, 관련 법령에 따라 필요한 경우 추가로 보관할 수 있습니다.</li>
               </ul>
-              <p>귀하는 위 내용에 대한 동의를 거부할 권리가 있으나, 필수 항목 미동의 시 서비스 이용이 제한될 수 있습니다.</p>
+              <p data-i18n-key="signup_terms_required_notice">귀하는 위 내용에 대한 동의를 거부할 권리가 있으나, 필수 항목 미동의 시 서비스 이용이 제한될 수 있습니다.</p>
             </div>
           </div>
 
@@ -151,16 +151,16 @@
           <div class="policy-box" role="region" aria-label="마케팅 활용 동의">
             <div class="policy-box__header">
               <h3 data-i18n-key="signup_terms_marketing_title">마케팅 정보 수신 동의 (선택)</h3>
-              <button type="button" class="link-button" data-toggle-policy="marketing-policy">[보기]</button>
+              <button type="button" class="link-button" data-toggle-policy="marketing-policy" data-policy-button="marketing">[보기]</button>
             </div>
             <div class="policy-details" id="marketing-policy" hidden>
-              <p>루체는 다음과 같이 마케팅 목적의 정보를 안내드릴 수 있습니다.</p>
+              <p data-i18n-key="signup_terms_marketing_intro">루체는 다음과 같이 마케팅 목적의 정보를 안내드릴 수 있습니다.</p>
               <ul>
-                <li>발송 항목: 뉴스레터, 이벤트 및 혜택 안내, 서비스 업데이트 공지</li>
-                <li>수집 항목: 이메일, 연락처, 서비스 이용 이력 기반 추천 정보</li>
-                <li>수신 거부: 언제든지 수신 거부를 요청하실 수 있으며, 거부 시 즉시 반영됩니다.</li>
+                <li data-i18n-key="signup_terms_marketing_item1">발송 항목: 뉴스레터, 이벤트 및 혜택 안내, 서비스 업데이트 공지</li>
+                <li data-i18n-key="signup_terms_marketing_item2">수집 항목: 이메일, 연락처, 서비스 이용 이력 기반 추천 정보</li>
+                <li data-i18n-key="signup_terms_marketing_item3">수신 거부: 언제든지 수신 거부를 요청하실 수 있으며, 거부 시 즉시 반영됩니다.</li>
               </ul>
-              <p>선택 동의이며, 미동의하셔도 핵심 서비스 이용에는 영향이 없습니다.</p>
+              <p data-i18n-key="signup_terms_marketing_notice">선택 동의이며, 미동의하셔도 핵심 서비스 이용에는 영향이 없습니다.</p>
             </div>
           </div>
 
