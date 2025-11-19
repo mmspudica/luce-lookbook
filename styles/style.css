@@ -49,6 +49,10 @@ body {
   line-height: 1.6;
 }
 
+body.modal-open {
+  overflow: hidden;
+}
+
 a {
   color: inherit;
 }
@@ -545,9 +549,25 @@ main section {
 }
 
 .look-modal__media img,
-.look-modal__media iframe {
+.look-modal__media iframe,
+.look-modal__media video {
   width: 100%;
   display: block;
+}
+
+.look-modal__media video {
+  height: 100%;
+  background-color: #000;
+  object-fit: contain;
+}
+
+.look-modal__placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  min-height: 300px;
+  color: var(--text-light);
 }
 
 .look-modal__body {
@@ -563,6 +583,18 @@ main section {
 
 .look-modal__body p {
   color: var(--text-light);
+}
+
+.look-modal__price {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text-color);
+}
+
+.look-modal__supplier {
+  margin-top: 0;
+  font-size: 16px;
 }
 
 .look-modal__body .btn {
