@@ -115,6 +115,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const filterButtons = document.querySelectorAll('.filter-btn');
   const navLinks = document.querySelectorAll('.main-nav a[data-view-target]');
   const sections = document.querySelectorAll('[data-view-section]');
+  const lookModal = document.getElementById('look-modal');
+  const lookModalMedia = document.getElementById('look-modal-media');
+  const lookModalBody = document.getElementById('look-modal-body');
+  const modalCloseTriggers = document.querySelectorAll('[data-modal-close]');
 
   if (!grid) {
     console.error('룩북 그리드를 찾을 수 없습니다.');
@@ -129,6 +133,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   let cachedCounts = { ...STATIC_METRIC_COUNTS };
   let cachedLatestCreatedAt = null;
   let lastMetricsError = false;
+  let lastFocusedElement = null;
 
   function setLookbookLoading(isLoading) {
     if (!lookbookLoader) {
@@ -196,8 +201,64 @@ document.addEventListener('DOMContentLoaded', async () => {
           <p class="look-card__supplier">${priceLabel}</p>
         </div>
       `;
+
+      card.addEventListener('click', () => openLookModal(item));
       grid.appendChild(card);
     });
+  }
+
+  function openLookModal(item) {
+    if (!lookModal || !lookModalMedia || !lookModalBody) {
+      return;
+    }
+
+    const videoSrc = encodeURI(item.videoUrl || deriveVideoUrlFromImage(item.imageUrl) || '');
+    lastFocusedElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+    if (videoSrc) {
+      lookModalMedia.innerHTML = `
+        <video controls autoplay playsinline preload="metadata">
+          <source src="${videoSrc}" type="video/mp4">
+          현재 브라우저에서는 동영상을 재생할 수 없습니다.
+        </video>
+      `;
+    } else {
+      lookModalMedia.innerHTML = '<div class="look-modal__placeholder">재생할 영상을 찾을 수 없습니다.</div>';
+    }
+
+    lookModalBody.innerHTML = `
+      <h2 id="look-modal-title">${item.title}</h2>
+      ${item.price ? `<p class="look-modal__price">${item.price}</p>` : ''}
+      ${item.supplier ? `<p class="look-modal__supplier">${item.supplier}</p>` : ''}
+    `;
+
+    lookModal.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('modal-open');
+    lookModal.querySelector('.look-modal__close')?.focus();
+    document.addEventListener('keydown', handleModalKeydown);
+  }
+
+  function closeLookModal() {
+    if (!lookModal || !lookModalMedia || !lookModalBody) {
+      return;
+    }
+
+    lookModal.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('modal-open');
+    lookModalMedia.innerHTML = '';
+    lookModalBody.innerHTML = '';
+    document.removeEventListener('keydown', handleModalKeydown);
+
+    if (lastFocusedElement) {
+      lastFocusedElement.focus();
+      lastFocusedElement = null;
+    }
+  }
+
+  function handleModalKeydown(event) {
+    if (event.key === 'Escape') {
+      closeLookModal();
+    }
   }
 
   function updateMetrics(counts = cachedCounts, latestCreatedAt = cachedLatestCreatedAt, hasError = lastMetricsError) {
@@ -399,6 +460,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.addEventListener('luce:language-changed', () => {
     updateMetrics();
   });
+
+  modalCloseTriggers.forEach(trigger => {
+    trigger.addEventListener('click', () => {
+      closeLookModal();
+    });
+  });
 });
 
 function normalizeLookbookItems(items = []) {
@@ -447,6 +514,7 @@ function normalizeLookbookItems(items = []) {
       const priceLabel = rawPrice || formattedPrice;
       const supplierLabel = item.supplier || item.brand || item.vendor || priceLabel;
       const category = item.category || item.type || item.segment || 'fashion';
+      const videoUrl = item.video_url || item.videoUrl || item.video || deriveVideoUrlFromImage(imageUrl);
 
       return {
         ...item,
@@ -455,7 +523,8 @@ function normalizeLookbookItems(items = []) {
         supplier: supplierLabel,
         price: priceLabel,
         category,
-        imageUrl
+        imageUrl,
+        videoUrl
       };
     })
     .filter(Boolean);
@@ -487,4 +556,22 @@ function parseMetadataFromImageUrl(imageUrl) {
   const priceLabel = hasValidPrice ? `₩${numericPrice.toLocaleString('ko-KR')}` : '';
 
   return { title, priceLabel };
+}
+
+function deriveVideoUrlFromImage(imageUrl) {
+  if (!imageUrl) {
+    return '';
+  }
+
+  const [basePath] = imageUrl.split('?');
+  const lastSlashIndex = basePath.lastIndexOf('/');
+  const directory = lastSlashIndex >= 0 ? imageUrl.slice(0, lastSlashIndex + 1) : '';
+  const filename = lastSlashIndex >= 0 ? basePath.slice(lastSlashIndex + 1) : basePath;
+
+  if (!filename.includes('.')) {
+    return '';
+  }
+
+  const videoFilename = filename.replace(/\.[^.]+$/, '.mp4');
+  return directory ? `${directory}${videoFilename}` : videoFilename;
 }

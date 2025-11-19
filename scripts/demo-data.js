@@ -34,6 +34,7 @@ function createLookbookEntry(filename, index) {
     id: index + 1,
     title,
     imageUrl: `assets/${trimmed}`,
+    videoUrl: `assets/${trimmed.replace(/\.[^.]+$/, '.mp4')}`,
     price: formattedPrice,
     supplier: formattedPrice,
     category: 'fashion'
