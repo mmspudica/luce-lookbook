@@ -159,5 +159,12 @@
   "checklist_card3_li4": "문서 기록 48시간 내 공유",
   "footer_subtitle": "동대문 라이브커머스를 위한 준비 도구. 고른다 → 준비한다 → 방송한다.",
   "footer_contact": "문의: admin@luce.app",
-  "footer_copyright": "© 2025 DSY International. All rights reserved."
+  "footer_copyright": "© 2025 DSY International. All rights reserved.",
+  "admin_gate_tag": "ADMIN ACCESS",
+  "admin_gate_title": "공급업체 전용 메뉴입니다.",
+  "admin_gate_description": "공급업체 회원 가입 후 아래 안내를 따라주세요.",
+  "admin_gate_instructions_line1": "공급업체 회원 가입 후 admin@luce.app 으로",
+  "admin_gate_instructions_line2": "상호명 / 성함을 적어 메일을 보내주세요.",
+  "admin_gate_instructions_line3": "확인 후 전용 어드민 권한을 안내드립니다.",
+  "admin_gate_cta": "admin@luce.app 로 메일 보내기"
 }

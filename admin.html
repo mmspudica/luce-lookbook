@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LUCE Lookbook Platform - Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles/style.css?v=1.0.1">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="logo" href="/">
+        <img src="assets/luce_logo_main.png" alt="LUCE" />
+        <span class="logo__text">LUCE LOOKBOOK</span>
+      </a>
+      <nav class="main-nav">
+        <a href="index.html#lookbook" data-i18n-key="nav_lookbook">룩북</a>
+        <a href="index.html#selection" data-i18n-key="nav_selection">셀렉션</a>
+        <a href="index.html#studio" data-i18n-key="nav_studio">스튜디오 셀렉션</a>
+        <a href="index.html#checklist" data-i18n-key="nav_checklist">체크리스트</a>
+        <a href="admin.html" aria-current="page" data-i18n-key="nav_admin">어드민</a>
+      </nav>
+      <div class="header-actions">
+        <nav class="lang-switcher" aria-label="언어 선택">
+          <button data-lang="ko" class="active">한글</button>
+          <span>/</span>
+          <button data-lang="en">ENG</button>
+          <span>/</span>
+          <button data-lang="zh">中文</button>
+        </nav>
+        <a class="btn ghost" href="signupUserTypeSelect.html" data-i18n-key="signup">회원가입</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="admin-gate" aria-labelledby="admin-gate-title">
+      <div class="container admin-gate__inner">
+        <div class="admin-gate__content">
+          <p class="tag" data-i18n-key="admin_gate_tag">ADMIN ACCESS</p>
+          <h1 id="admin-gate-title" data-i18n-key="admin_gate_title">공급업체 전용 메뉴입니다.</h1>
+          <p class="admin-gate__description" data-i18n-key="admin_gate_description">
+            공급업체 회원 가입 후 아래 안내를 따라주세요.
+          </p>
+
+          <div class="admin-gate__card" role="status" aria-live="polite">
+            <p data-i18n-key="admin_gate_instructions_line1">공급업체 회원 가입 후 admin@luce.app 으로</p>
+            <p data-i18n-key="admin_gate_instructions_line2">상호명 / 성함을 적어 메일을 보내주세요.</p>
+            <p data-i18n-key="admin_gate_instructions_line3">확인 후 전용 어드민 권한을 안내드립니다.</p>
+          </div>
+
+          <a class="btn primary" href="mailto:admin@luce.app" data-i18n-key="admin_gate_cta">admin@luce.app 로 메일 보내기</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="scripts/i18n.js"></script>
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      luceI18n.init();
+    });
+  </script>
+</body>
+</html>

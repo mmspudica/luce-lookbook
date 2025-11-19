@@ -159,5 +159,12 @@
   "checklist_card3_li4": "Share document records within 48 hours",
   "footer_subtitle": "The prep tool for Dongdaemun Live Commerce. Select → Prep → Broadcast.",
   "footer_contact": "Contact: admin@luce.app",
-  "footer_copyright": "© 2025 DSY International. All rights reserved."
+  "footer_copyright": "© 2025 DSY International. All rights reserved.",
+  "admin_gate_tag": "ADMIN ACCESS",
+  "admin_gate_title": "This menu is for suppliers only.",
+  "admin_gate_description": "Please complete the supplier sign-up and follow the guide below.",
+  "admin_gate_instructions_line1": "After registering as a supplier, email admin@luce.app",
+  "admin_gate_instructions_line2": "Include your business name and contact person.",
+  "admin_gate_instructions_line3": "We will review your request and send back admin access.",
+  "admin_gate_cta": "Email admin@luce.app"
 }
