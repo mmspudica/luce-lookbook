@@ -119,6 +119,7 @@
   "metric_error": "Failed to load metrics.",
   "lookbook_empty": "No looks to display right now.",
   "lookbook_loader": "Loading next looks...",
+  "look_card_hint": "Click to view details",
   "look_modal_video_error": "Your browser cannot play this video.",
   "look_modal_video_placeholder": "Video unavailable.",
   "selection_title": "Selection Cart",

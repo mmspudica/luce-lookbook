@@ -106,6 +106,18 @@
 
         <!-- app.js가 이 곳에 룩북 아이템을 채워넣습니다. -->
         <div class="lookbook-grid" id="lookbook-grid" aria-live="polite"></div>
+        <template id="look-card-template">
+          <article class="look-card">
+            <div class="look-card__image-wrapper">
+              <img src="" alt="" class="look-card__image" loading="lazy">
+              <span class="look-card__hint" data-i18n-key="look_card_hint">클릭하여 상세 보기</span>
+            </div>
+            <div class="look-card__body">
+              <h3 class="look-card__title"></h3>
+              <p class="look-card__supplier"></p>
+            </div>
+          </article>
+        </template>
         <div class="lookbook-loader" id="lookbook-loader" aria-hidden="true" data-i18n-key="lookbook_loader">다음 룩을 불러오는 중...</div>
         <div id="lookbook-sentinel" class="lookbook-sentinel" aria-hidden="true"></div>
       </div>

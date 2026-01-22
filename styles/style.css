@@ -439,6 +439,7 @@ main section {
 }
 
 .look-card__image-wrapper {
+  position: relative;
   aspect-ratio: 3 / 4;
   background-color: #f0f0f0;
 }
@@ -453,6 +454,33 @@ main section {
   object-fit: contain;
   padding: 10%;
   opacity: 0.5;
+}
+
+.look-card__hint {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  opacity: 0.85;
+  transition: opacity 0.2s ease, transform 0.2s ease, background 0.2s ease;
+  pointer-events: none;
+}
+
+.look-card:hover .look-card__hint {
+  opacity: 1;
+  transform: translateY(-2px);
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.look-card:active .look-card__hint {
+  transform: scale(0.98);
+  background: rgba(0, 0, 0, 0.75);
 }
 
 .look-card__body {

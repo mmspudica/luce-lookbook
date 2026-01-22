@@ -219,7 +219,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     return item.title || '';
   }
 
-  function renderGrid(items) {
+  function renderLookCards(items) {
     if (!grid) {
       return;
     }
@@ -230,25 +230,64 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     grid.innerHTML = '';
+    const cardTemplate = document.getElementById('look-card-template');
     items.forEach(item => {
-      const card = document.createElement('article');
-      card.className = 'look-card';
+      const templateContent = cardTemplate?.content?.firstElementChild;
+      const card = templateContent ? templateContent.cloneNode(true) : document.createElement('article');
+      if (!card.classList.contains('look-card')) {
+        card.classList.add('look-card');
+      }
       card.dataset.id = item.id;
 
       const imageSrc = encodeURI(item.imageUrl);
       const priceLabel = item.price || item.supplier || '';
       const displayTitle = getLookTitle(item);
+      const hintText = t('look_card_hint', '클릭하여 상세 보기');
 
-      card.innerHTML = `
-        <div class="look-card__image-wrapper">
-          <img src="${imageSrc}" alt="${displayTitle}" class="look-card__image" loading="lazy"
-               onerror="this.src='https://placehold.co/600x800/EEE/333?text=Image+Not+Found'; this.classList.add('error');">
-        </div>
-        <div class="look-card__body">
-          <h3 class="look-card__title">${displayTitle}</h3>
-          <p class="look-card__supplier">${priceLabel}</p>
-        </div>
-      `;
+      if (cardTemplate) {
+        const imageWrapper = card.querySelector('.look-card__image-wrapper');
+        const image = card.querySelector('.look-card__image');
+        const title = card.querySelector('.look-card__title');
+        const supplier = card.querySelector('.look-card__supplier');
+        const hint = card.querySelector('.look-card__hint');
+
+        if (imageWrapper && !imageWrapper.contains(image) && image) {
+          imageWrapper.appendChild(image);
+        }
+
+        if (image) {
+          image.src = imageSrc;
+          image.alt = displayTitle;
+          image.setAttribute(
+            'onerror',
+            "this.src='https://placehold.co/600x800/EEE/333?text=Image+Not+Found'; this.classList.add('error');"
+          );
+        }
+
+        if (title) {
+          title.textContent = displayTitle;
+        }
+
+        if (supplier) {
+          supplier.textContent = priceLabel;
+        }
+
+        if (hint) {
+          hint.textContent = hintText;
+        }
+      } else {
+        card.innerHTML = `
+          <div class="look-card__image-wrapper">
+            <img src="${imageSrc}" alt="${displayTitle}" class="look-card__image" loading="lazy"
+                 onerror="this.src='https://placehold.co/600x800/EEE/333?text=Image+Not+Found'; this.classList.add('error');">
+            <span class="look-card__hint">${hintText}</span>
+          </div>
+          <div class="look-card__body">
+            <h3 class="look-card__title">${displayTitle}</h3>
+            <p class="look-card__supplier">${priceLabel}</p>
+          </div>
+        `;
+      }
 
       card.addEventListener('click', () => openLookModal(item));
       grid.appendChild(card);
@@ -474,12 +513,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function renderActiveFilter() {
     if (activeFilter === 'all') {
-      renderGrid(allData);
+      renderLookCards(allData);
       return;
     }
 
     const filteredData = allData.filter(item => item.category === activeFilter);
-    renderGrid(filteredData);
+    renderLookCards(filteredData);
   }
 
   filterButtons.forEach(button => {
