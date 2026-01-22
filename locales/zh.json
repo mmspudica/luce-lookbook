@@ -119,6 +119,7 @@
   "metric_error": "无法加载指标。",
   "lookbook_empty": "当前没有可展示的造型。",
   "lookbook_loader": "正在加载下一个造型...",
+  "look_card_hint": "点击查看详情",
   "look_modal_video_error": "当前浏览器无法播放该视频。",
   "look_modal_video_placeholder": "暂无可播放的视频。",
   "selection_title": "精选篮",
