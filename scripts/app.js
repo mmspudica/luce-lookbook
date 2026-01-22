@@ -268,7 +268,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (videoSrc) {
       lookModalMedia.innerHTML = `
-        <video controls autoplay playsinline preload="metadata">
+        <video controls autoplay playsinline muted preload="metadata">
           <source src="${videoSrc}" type="video/mp4">
           ${fallbackText}
         </video>
