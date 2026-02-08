@@ -1,13 +1,23 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="동대문 도매상인과 셀러를 위한 B2B 룩북 플랫폼 LUCE. AI 모델 자동화부터 라이브커머스 준비까지 한 번에 해결하세요.">
+  <meta name="keywords" content="LUCE, 루체, 동대문, 도매, B2B, 룩북, 라이브커머스, AI모델, 의류도매, apM">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://luce.app/">
+  <meta property="og:title" content="LUCE Lookbook Platform">
+  <meta property="og:description" content="동대문 도매상인과 셀러를 위한 B2B 룩북 플랫폼.">
+  <meta property="og:image" content="assets/luce_logo_main.png">
+
   <title>LUCE Lookbook Platform</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
-  
+
   <!-- 
     [‼️‼️‼️ 가장 중요한 수정 ‼️‼️‼️]
     CSS 파일 링크 뒤에 '?v=1.0.1'을 추가하여 브라우저 캐시를 강제로 무력화합니다.
@@ -15,11 +25,13 @@
   <link rel="stylesheet" href="styles/style.css?v=1.0.1">
 
 </head>
+
 <body>
   <header class="site-header">
     <div class="container header-inner">
       <a class="logo" href="/">
-        <img src="assets/luce_logo_main.png" alt="LUCE" />
+        <!-- CLS 방지를 위해 width, height 명시 -->
+        <img src="assets/luce_logo_main.png" alt="LUCE" width="94" height="48" style="width: auto; height: 48px;" />
         <span class="logo__text">LUCE LOOKBOOK</span>
       </a>
       <nav class="main-nav">
@@ -29,7 +41,7 @@
         <a href="#checklist" data-view-target="checklist" data-i18n-key="nav_checklist">체크리스트</a>
         <a href="admin.html" data-i18n-key="nav_admin">어드민</a>
       </nav>
-      
+
       <!-- [디자인 수정] 언어 선택기 + 회원가입 버튼 -->
       <div class="header-actions">
         <nav class="lang-switcher" aria-label="언어 선택">
@@ -49,11 +61,15 @@
       <div class="container hero-media__inner">
         <div class="hero-media__text">
           <p class="tag" data-i18n-key="hero_feature_tag">LOOKBOOK FEATURE</p>
-          <h1 id="hero-media-title" data-i18n-key="hero_feature_title">B2B Seller 전문 App "LUCE" 회원가입 Best 3 도매상인 중 apM 도매상인 대상 판매제품 AI모델 자동화 업데이트</h1>
-          <p class="hero-media__description" data-i18n-key="hero_feature_description">동대문 도매상인분들의 "LUCE" 회원가입 과 판매제품 업데이트를 자동화 한 신규 경험을 만나보세요.</p>
+          <h1 id="hero-media-title" data-i18n-key="hero_feature_title">B2B Seller 전문 App "LUCE" 회원가입 Best 3 도매상인 중 apM
+            도매상인 대상 판매제품 AI모델 자동화 업데이트</h1>
+          <p class="hero-media__description" data-i18n-key="hero_feature_description">동대문 도매상인분들의 "LUCE" 회원가입 과 판매제품
+            업데이트를 자동화 한 신규 경험을 만나보세요.</p>
         </div>
         <div class="hero-media__player">
-          <video controls autoplay playsinline muted loop poster="" aria-label="apM 회원가입 및 판매제품 업데이트 소개 영상">
+          <!-- 비디오 preload=none 또는 metadata 권장, poster 설정, playsinline 유지 -->
+          <video controls autoplay playsinline muted loop poster="assets/luce_logo_main.png" preload="metadata"
+            aria-label="apM 회원가입 및 판매제품 업데이트 소개 영상">
             <source src="assets/LP0033.mp4" type="video/mp4">
             <span data-i18n-key="hero_video_fallback">현재 브라우저에서는 동영상을 재생할 수 없습니다.</span>
           </video>
@@ -101,7 +117,8 @@
             <p class="metric-value" id="metric-members">0</p>
             <p class="metric-caption" data-i18n-key="metric_members_caption">소식 구독 중</p>
           </article>
-          <p class="metric-error" id="metric-error" role="status" aria-live="polite" hidden data-i18n-key="metric_error">지표를 불러오지 못했습니다.</p>
+          <p class="metric-error" id="metric-error" role="status" aria-live="polite" hidden
+            data-i18n-key="metric_error">지표를 불러오지 못했습니다.</p>
         </div>
 
         <!-- app.js가 이 곳에 룩북 아이템을 채워넣습니다. -->
@@ -118,7 +135,8 @@
             </div>
           </article>
         </template>
-        <div class="lookbook-loader" id="lookbook-loader" aria-hidden="true" data-i18n-key="lookbook_loader">다음 룩을 불러오는 중...</div>
+        <div class="lookbook-loader" id="lookbook-loader" aria-hidden="true" data-i18n-key="lookbook_loader">다음 룩을 불러오는
+          중...</div>
         <div id="lookbook-sentinel" class="lookbook-sentinel" aria-hidden="true"></div>
       </div>
     </section>
@@ -127,7 +145,8 @@
     <div id="look-modal" class="look-modal" aria-hidden="true">
       <div class="look-modal__backdrop" data-modal-close></div>
       <div class="look-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="look-modal-title" tabindex="-1">
-        <button type="button" class="look-modal__close" data-modal-close aria-label="닫기"><span aria-hidden="true">×</span></button>
+        <button type="button" class="look-modal__close" data-modal-close aria-label="닫기"><span
+            aria-hidden="true">×</span></button>
         <div class="look-modal__media" id="look-modal-media"></div>
         <div class="look-modal__body" id="look-modal-body"></div>
       </div>
@@ -140,7 +159,8 @@
           <div>
             <p class="tag">SELECTION</p>
             <h2 data-i18n-key="selection_title">셀렉션 바구니</h2>
-            <p class="section-subtitle" data-i18n-key="selection_subtitle">스튜디오 요청 전까지 원하는 룩을 모아두세요. 카테고리별 필수 정보가 자동으로 매핑됩니다.</p>
+            <p class="section-subtitle" data-i18n-key="selection_subtitle">스튜디오 요청 전까지 원하는 룩을 모아두세요. 카테고리별 필수 정보가 자동으로
+              매핑됩니다.</p>
           </div>
           <button class="btn tertiary" id="export-looksheet" data-i18n-key="selection_export">룩시트 10초 생성</button>
         </header>
@@ -162,16 +182,16 @@
           <div>
             <p class="tag">STUDIO CHECKOUT</p>
             <h2 id="studio-title" data-i18n-key="studio_title">스튜디오 셀렉션 체크아웃</h2>
-            <p class="section-subtitle" data-i18n-key="studio_subtitle">셀렉션 담기 → 스튜디오 예약까지 한 번에 완료하세요. 요청 → 승인 → 준비중 → 완료가 실시간으로 공유됩니다.</p>
+            <p class="section-subtitle" data-i18n-key="studio_subtitle">셀렉션 담기 → 스튜디오 예약까지 한 번에 완료하세요. 요청 → 승인 → 준비중 →
+              완료가 실시간으로 공유됩니다.</p>
           </div>
         </header>
 
         <form id="studio-request" class="studio-form">
           <div class="form-group">
             <label for="studio-seller" data-i18n-key="studio_seller_label">셀러 명</label>
-            <input id="studio-seller" name="studio-seller" type="text" 
-                   placeholder="셀러 브랜드명을 입력하세요" 
-                   data-i18n-key="studio_seller_placeholder" required>
+            <input id="studio-seller" name="studio-seller" type="text" placeholder="셀러 브랜드명을 입력하세요"
+              data-i18n-key="studio_seller_placeholder" required>
           </div>
           <div class="form-row">
             <div class="form-group">
@@ -191,9 +211,8 @@
           </div>
           <div class="form-group">
             <label for="studio-notes" data-i18n-key="studio_notes_label">요청 메모</label>
-            <textarea id="studio-notes" name="studio-notes" rows="4" 
-                      placeholder="준비 요청 사항, 협의가 필요한 포인트를 적어주세요"
-                      data-i18n-key="studio_notes_placeholder"></textarea>
+            <textarea id="studio-notes" name="studio-notes" rows="4" placeholder="준비 요청 사항, 협의가 필요한 포인트를 적어주세요"
+              data-i18n-key="studio_notes_placeholder"></textarea>
           </div>
           <button class="btn primary" type="submit" data-i18n-key="studio_submit">요청 등록</button>
           <p class="form-feedback" id="studio-feedback" role="status" aria-live="polite"></p>
@@ -273,4 +292,5 @@
   <script src="scripts/i18n.js" defer></script>
   <script type="module" src="scripts/app.js"></script>
 </body>
+
 </html>
