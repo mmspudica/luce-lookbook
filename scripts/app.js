@@ -258,10 +258,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (image) {
           image.src = imageSrc;
           image.alt = displayTitle;
-          image.setAttribute(
-            'onerror',
-            "this.src='https://placehold.co/600x800/EEE/333?text=Image+Not+Found'; this.classList.add('error');"
-          );
+          // [Refactor] Inline onerror removed in favor of addEventListener
+          image.addEventListener('error', function() {
+            this.src = 'https://placehold.co/600x800/EEE/333?text=Image+Not+Found';
+            this.classList.add('error');
+          }, { once: true }); // Prevent infinite loop if placeholder fails
         }
 
         if (title) {
@@ -276,10 +277,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           hint.textContent = hintText;
         }
       } else {
+        // [Refactor] Avoid inline onerror in innerHTML
         card.innerHTML = `
           <div class="look-card__image-wrapper">
-            <img src="${imageSrc}" alt="${displayTitle}" class="look-card__image" loading="lazy"
-                 onerror="this.src='https://placehold.co/600x800/EEE/333?text=Image+Not+Found'; this.classList.add('error');">
+            <img src="${imageSrc}" alt="${displayTitle}" class="look-card__image" loading="lazy">
             <span class="look-card__hint">${hintText}</span>
           </div>
           <div class="look-card__body">
@@ -287,6 +288,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             <p class="look-card__supplier">${priceLabel}</p>
           </div>
         `;
+        
+        // Attach error listener after creating elements
+        const imgEl = card.querySelector('.look-card__image');
+        if (imgEl) {
+          imgEl.addEventListener('error', function() {
+            this.src = 'https://placehold.co/600x800/EEE/333?text=Image+Not+Found';
+            this.classList.add('error');
+          }, { once: true });
+        }
       }
 
       card.addEventListener('click', () => openLookModal(item));
