@@ -33,11 +33,14 @@
 }
 
 /* 1. 기본 및 레이아웃 */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
 }
@@ -145,10 +148,88 @@ img {
   margin: 0 0 8px 0;
 }
 
+.hero-rankings {
+  margin-top: 32px;
+  display: flex;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+
+.ranking-group {
+  flex: 1;
+  min-width: 200px;
+}
+
+.ranking-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0 0 12px;
+  color: var(--primary-color);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid var(--primary-color);
+  padding-bottom: 8px;
+}
+
+.ranking-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  counter-reset: ranking-counter;
+}
+
+.ranking-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 15px;
+  color: var(--text-color);
+}
+
+.ranking-item::before {
+  counter-increment: ranking-counter;
+  content: counter(ranking-counter);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--primary-color);
+  width: 20px;
+}
+
+.ranking-item:last-child {
+  border-bottom: none;
+}
+
+.ranking-item.skeleton {
+  height: 38px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: 4px;
+  margin-bottom: 4px;
+}
+
+.ranking-item.skeleton::before {
+  content: none;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 .hero-media__description {
   color: var(--text-secondary);
   margin: 0;
 }
+
+
 
 .hero-media__player video {
   width: 100%;
@@ -1435,7 +1516,7 @@ body.signup-body {
   line-height: 1.7;
 }
 
-.admin-gate__card p + p {
+.admin-gate__card p+p {
   margin-top: 8px;
 }
 

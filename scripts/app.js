@@ -51,8 +51,8 @@ function getDynamicMetricOffsets(referenceDate = new Date()) {
 
   return {
     supplier: METRIC_BASE_OFFSETS.supplier + diffDays * METRIC_DAILY_INCREMENTS.supplier,
-    seller:   METRIC_BASE_OFFSETS.seller   + diffDays * METRIC_DAILY_INCREMENTS.seller,
-    member:   METRIC_BASE_OFFSETS.member   + diffDays * METRIC_DAILY_INCREMENTS.member
+    seller: METRIC_BASE_OFFSETS.seller + diffDays * METRIC_DAILY_INCREMENTS.seller,
+    member: METRIC_BASE_OFFSETS.member + diffDays * METRIC_DAILY_INCREMENTS.member
   };
 }
 
@@ -259,7 +259,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           image.src = imageSrc;
           image.alt = displayTitle;
           // [Refactor] Inline onerror removed in favor of addEventListener
-          image.addEventListener('error', function() {
+          image.addEventListener('error', function () {
             this.src = 'https://placehold.co/600x800/EEE/333?text=Image+Not+Found';
             this.classList.add('error');
           }, { once: true }); // Prevent infinite loop if placeholder fails
@@ -288,11 +288,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             <p class="look-card__supplier">${priceLabel}</p>
           </div>
         `;
-        
+
         // Attach error listener after creating elements
         const imgEl = card.querySelector('.look-card__image');
         if (imgEl) {
-          imgEl.addEventListener('error', function() {
+          imgEl.addEventListener('error', function () {
             this.src = 'https://placehold.co/600x800/EEE/333?text=Image+Not+Found';
             this.classList.add('error');
           }, { once: true });
@@ -453,8 +453,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       cachedCounts = {
         supplier: (supplierRes.count ?? 0) + dynamicOffsets.supplier,
-        seller:   (sellerRes.count   ?? 0) + dynamicOffsets.seller,
-        member:   (memberRes.count   ?? 0) + dynamicOffsets.member
+        seller: (sellerRes.count ?? 0) + dynamicOffsets.seller,
+        member: (memberRes.count ?? 0) + dynamicOffsets.member
       };
       cachedLatestCreatedAt = latestRes.data?.created_at || null;
       lastMetricsError = false;
@@ -569,9 +569,89 @@ document.addEventListener('DOMContentLoaded', async () => {
     setLookbookLoading(true);
   }
 
+  async function fetchRankings() {
+    const supabase = await resolveSupabaseClient();
+    if (!supabase) return;
+
+    const supplierList = document.getElementById('ranking-supplier-list');
+    const sellerList = document.getElementById('ranking-seller-list');
+
+    try {
+      // Fetch sufficient items to ensure 5 valid items after filtering
+      const limit = 50;
+      const displayLimit = 5;
+
+      const [supplierRes, sellerRes] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('company_name, created_at')
+          .eq('user_type', 'supplier')
+          .order('created_at', { ascending: true })
+          .limit(limit),
+        supabase
+          .from('profiles')
+          .select('full_name, created_at')
+          .or('user_type.eq.seller,user_type.eq.member')
+          .order('created_at', { ascending: true })
+          .limit(limit)
+      ]);
+
+      // Specific exclusions for suppliers: 'Sally', '3'
+      const supplierExclusions = ['Sally', '3'];
+      const filteredSuppliers = filterRankingItems(
+        supplierRes.data || [],
+        'company_name',
+        supplierExclusions
+      );
+
+      const filteredSellers = filterRankingItems(sellerRes.data || [], 'full_name');
+
+      renderRankingItems(supplierList, filteredSuppliers, 'company_name', displayLimit);
+      renderRankingItems(sellerList, filteredSellers, 'full_name', displayLimit);
+
+    } catch (error) {
+      console.error('랭킹 로딩 실패:', error);
+      if (supplierList) supplierList.innerHTML = '<li class="ranking-error">랭킹을 불러올 수 없습니다.</li>';
+      if (sellerList) sellerList.innerHTML = '<li class="ranking-error">랭킹을 불러올 수 없습니다.</li>';
+    }
+  }
+
+  function filterRankingItems(items, nameField, extraKeywords = []) {
+    // Exclude names containing these keywords (case-insensitive)
+    const baseKeywords = ['테스트', '테스터', 'test', '균', 'Jaegyun'];
+    const excludedKeywords = [...baseKeywords, ...extraKeywords];
+
+    return items.filter(item => {
+      const name = String(item[nameField] || '').toLowerCase();
+      if (!name) return false;
+
+      // Check if name includes any of the keywords (case-insensitive)
+      return !excludedKeywords.some(keyword => name.includes(keyword.toLowerCase()));
+    });
+  }
+
+  function renderRankingItems(element, items, nameField, limit) {
+    if (!element) return;
+    element.innerHTML = '';
+
+    if (!items || items.length === 0) {
+      element.innerHTML = '<li class="ranking-empty">-</li>';
+      return;
+    }
+
+    const itemsToShow = items.slice(0, limit);
+    itemsToShow.forEach(item => {
+      const li = document.createElement('li');
+      li.className = 'ranking-item';
+      li.textContent = item[nameField] || '익명';
+      element.appendChild(li);
+    });
+  }
+
   updateMetrics();
   hydrateLookbookFromSupabase();
   fetchProfileMetrics();
+  fetchRankings();
 
   document.getElementById('lookbook')?.setAttribute('aria-hidden', 'false');
   document.querySelector('.main-nav a[data-view-target="lookbook"]')?.classList.add('active');
