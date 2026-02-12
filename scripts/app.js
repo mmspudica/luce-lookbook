@@ -606,8 +606,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const filteredSellers = filterRankingItems(sellerRes.data || [], 'full_name');
 
+      // Hardcode top 2 seller rankings
+      const hardcodedSellers = [
+        { full_name: 'Tonya', created_at: '2020-01-01' },
+        { full_name: 'Mimi', created_at: '2020-01-02' }
+      ];
+
+      // Combine hardcoded with filtered results, limiting to displayLimit total
+      const combinedSellers = [...hardcodedSellers, ...filteredSellers].slice(0, displayLimit);
+
       renderRankingItems(supplierList, filteredSuppliers, 'company_name', displayLimit);
-      renderRankingItems(sellerList, filteredSellers, 'full_name', displayLimit);
+      renderRankingItems(sellerList, combinedSellers, 'full_name', displayLimit);
 
     } catch (error) {
       console.error('랭킹 로딩 실패:', error);
